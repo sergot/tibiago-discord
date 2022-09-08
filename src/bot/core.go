@@ -1,16 +1,15 @@
 package bot
 
-import "os"
+import (
+	"os"
 
-func New() *Bot {
-	b := &Bot{}
+	"github.com/sergot/tibiago/src/models"
+)
+
+func New() *models.Bot {
+	b := &models.Bot{}
 
 	b.Token = os.Getenv("BOT_TOKEN")
-	b.CmdPrefix = "!"
 
 	return b
-}
-
-func (b *Bot) LoadConfig() {
-
 }

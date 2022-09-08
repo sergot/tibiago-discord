@@ -3,17 +3,12 @@ package bot
 import (
 	"os"
 
+	"github.com/sergot/tibiago/src/models"
 	"gopkg.in/yaml.v3"
 )
 
-type Config struct {
-	Bot struct {
-		a string
-	}
-}
-
-func LoadConfig(filepath string) (*Config, error) {
-	config := Config{}
+func LoadConfig(filepath string) (*models.Config, error) {
+	config := models.Config{}
 
 	content, err := os.ReadFile(filepath)
 	if err != nil {

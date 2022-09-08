@@ -6,7 +6,7 @@ WORKDIR /opt/app/tibiago
 
 COPY . .
 
-RUN go mod download
+RUN go install github.com/cosmtrek/air@latest && go mod download
 # RUN go build .
 
-CMD ["go", "run", "main.go"]
+CMD ["air", "bot"]
