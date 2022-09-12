@@ -2,7 +2,8 @@ package models
 
 type Config struct {
 	Bot struct {
-		CmdPrefix string
+		CmdPrefix      string
+		VocationEmojis map[string]string `yaml:"vocationEmojis"`
 	}
 }
 

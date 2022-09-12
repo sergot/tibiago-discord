@@ -39,3 +39,5 @@ db-reset:
 		docker-compose exec db psql postgres://local-dev@db/tibiago?sslmode=disable -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
 		docker-compose exec bot /bin/bash -c "go run main.go migrate"
 		docker-compose exec bot /bin/bash -c "go run main.go seed"
+fixtures:
+		testfixtures --dump -d postgres -c "postgres://local-dev@localhost:5432/tibiago?sslmode=disable" -D testdata/fixtures

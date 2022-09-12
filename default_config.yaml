@@ -1,2 +1,7 @@
 bot:
   cmdprefix: "!"
+  vocationEmojis:
+    🔵: ek
+    🟡: rp
+    🟣: ms
+    🟢: ed

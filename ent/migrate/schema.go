@@ -12,7 +12,7 @@ var (
 	BossesColumns = []*schema.Column{
 		{Name: "uuid", Type: field.TypeUUID},
 		{Name: "name", Type: field.TypeString, Unique: true},
-		{Name: "template", Type: field.TypeString, Default: "1ek1ed3sh"},
+		{Name: "template", Type: field.TypeString, Default: "1ek1ed3shooter"},
 	}
 	// BossesTable holds the schema information for the "bosses" table.
 	BossesTable = &schema.Table{

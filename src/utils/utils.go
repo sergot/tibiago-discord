@@ -7,14 +7,19 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"unicode"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/mattn/go-shellwords"
 	"github.com/mozillazg/go-unidecode"
+	"github.com/thoas/go-funk"
 
 	"github.com/sergot/tibiago/ent"
 	"github.com/sergot/tibiago/src/models"
@@ -63,7 +68,17 @@ func ParseCmd(m *discordgo.MessageCreate, instance *models.Instance) (*models.Cm
 	return c, nil
 }
 
-func PrintParticipants(template string, participants []*ent.Participant) []string {
+type Part struct {
+	ID  string
+	Voc string
+}
+
+var aliases map[string][]string = map[string][]string{
+	"shooter": {"ed", "ms", "rp"},
+	"any":     {"ek", "ed", "ms", "rp"},
+}
+
+func BosslistParticipants(template string, parts []Part) []string {
 	vocs := regexp.MustCompile(`[a-zA-Z]+`).FindAllString(template, -1)
 	amounts := regexp.MustCompile(`[0-9]+`).FindAllString(template, -1)
 
@@ -75,10 +90,10 @@ func PrintParticipants(template string, participants []*ent.Participant) []strin
 		}
 		for j := 0; j < n; j++ {
 			user := voc
-			for x, p := range participants {
-				if p.Vocation.String() == voc {
-					user = fmt.Sprintf("<@%s>", p.DiscordID)
-					participants = append(participants[:x], participants[x+1:]...)
+			for x, p := range parts {
+				if p.Voc == voc || slices.Contains(aliases[voc], p.Voc) {
+					user = fmt.Sprintf("<@%s>", p.ID)
+					parts = append(parts[:x], parts[x+1:]...)
 					break
 				}
 			}
@@ -90,7 +105,7 @@ func PrintParticipants(template string, participants []*ent.Participant) []strin
 	return result
 }
 
-func GenerateBossList(bosslist *ent.Bosslist) string {
+func GenerateBosslist(bosslist *ent.Bosslist) string {
 	boss := bosslist.QueryBoss().OnlyX(context.Background())
 
 	t_data := struct {
@@ -108,15 +123,27 @@ func GenerateBossList(bosslist *ent.Bosslist) string {
 		tmpl = boss.Template
 	}
 
-	participants := PrintParticipants(tmpl, bosslist.QueryParticipants().AllX(context.Background()))
+	parts := funk.Map(bosslist.QueryParticipants().AllX(context.Background()), func(ep *ent.Participant) Part {
+		return Part{
+			ID:  ep.DiscordID,
+			Voc: ep.Vocation.String(),
+		}
+	})
+	participants := BosslistParticipants(tmpl, parts.([]Part))
 	fmt.Println("PATO:", participants)
 
 	for _, p := range participants {
 		t_data.Participants = append(t_data.Participants, template.HTML(p))
 	}
 
+	var (
+		_, b, _, _ = runtime.Caller(0)
+		basepath   = filepath.Dir(b)
+	)
+
 	buf := new(bytes.Buffer)
-	t, err := template.ParseFiles("templates/bosslist.tmpl")
+	// TODO: fix path
+	t, err := template.ParseFiles(fmt.Sprintf("%s/../../templates/bosslist.tmpl", basepath))
 	if err != nil {
 		log.Println(err)
 	}

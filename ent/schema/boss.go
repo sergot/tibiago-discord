@@ -23,7 +23,7 @@ func (Boss) Fields() []ent.Field {
 			Unique(),
 
 		field.String("template").
-			Default("1ek1ed3sh"), // TODO: implement template system
+			Default("1ek1ed3shooter"),
 	}
 }
 

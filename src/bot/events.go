@@ -7,6 +7,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/sergot/tibiago/ent/bosslist"
+	"github.com/sergot/tibiago/ent/participant"
 	"github.com/sergot/tibiago/src/models"
 	"github.com/sergot/tibiago/src/utils"
 )
@@ -60,6 +61,14 @@ func ReactionHandler(db string) func(s *discordgo.Session, m *discordgo.MessageR
 			return
 		}
 
+		instance := instances_map[m.GuildID]
+		vocation := instance.Config.Bot.VocationEmojis[m.Emoji.Name]
+		fmt.Println(instance.Config.Bot.VocationEmojis)
+		if vocation == "" {
+			log.Println("Unknown vocation emoji: ", m.Emoji.APIName())
+			return
+		}
+
 		client, err := models.ConnectDatabase()
 		if err != nil {
 			log.Println(err)
@@ -68,7 +77,7 @@ func ReactionHandler(db string) func(s *discordgo.Session, m *discordgo.MessageR
 
 		p, err := client.Participant.
 			Create().
-			SetVocation("ek").
+			SetVocation(participant.Vocation(vocation)).
 			SetDiscordID(m.UserID).
 			Save(context.Background())
 		if err != nil {
@@ -76,7 +85,6 @@ func ReactionHandler(db string) func(s *discordgo.Session, m *discordgo.MessageR
 			return
 		}
 
-		// TODO: edit list
 		bl, err := client.Bosslist.
 			Query().
 			Where(bosslist.DiscordMessageID(m.MessageID)).
@@ -86,8 +94,6 @@ func ReactionHandler(db string) func(s *discordgo.Session, m *discordgo.MessageR
 			return
 		}
 
-		fmt.Println(bl)
-
 		_, err = bl.Update().
 			AddParticipants(p).
 			Save(context.Background())
@@ -96,13 +102,14 @@ func ReactionHandler(db string) func(s *discordgo.Session, m *discordgo.MessageR
 			return
 		}
 
+		// TODO: leave the reaction?
 		err = s.MessageReactionRemove(message.ChannelID, message.ID, m.Emoji.APIName(), m.UserID)
 		if err != nil {
 			log.Println(err)
 			return
 		}
 
-		list := utils.GenerateBossList(bl)
+		list := utils.GenerateBosslist(bl)
 		fmt.Println(list)
 
 		_, err = s.ChannelMessageEdit(message.ChannelID, message.ID, list)

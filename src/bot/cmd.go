@@ -58,7 +58,7 @@ func RunCommand(s *discordgo.Session, cmd *models.Cmd) error {
 		}
 		log.Println("Bosslist created: ", bl)
 
-		list := utils.GenerateBossList(bl)
+		list := utils.GenerateBosslist(bl)
 
 		bl_msg, err := s.ChannelMessageSend(cmd.ChannelID, list)
 		if err != nil {
