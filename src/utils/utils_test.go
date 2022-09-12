@@ -70,8 +70,7 @@ func TestGenerateBosslist(t *testing.T) {
 		t.Fail()
 	}
 
-	startsat, _ := time.Parse("2006-01-02", "2022-09-09")
-	bl, err := factory.BosslistFactory().SetBoss(b).SetStartsAt(startsat).Create(context.TODO())
+	bl, err := factory.BosslistFactory().SetBoss(b).Create(context.TODO())
 	if err != nil {
 		t.Fail()
 	}
@@ -114,8 +113,9 @@ func initBossFactory(f *carrier.EntFactory) {
 }
 
 func initBosslistFactory(f *carrier.EntFactory) {
+	startsat, _ := time.Parse("2006-01-02", "2022-09-09")
 	meta := carrier.EntBosslistMetaFactory().
-		SetStartsAtDefault(time.Now())
+		SetStartsAtDefault(startsat)
 	f.SetBosslistFactory(meta.Build())
 }
 
