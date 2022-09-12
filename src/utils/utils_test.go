@@ -86,7 +86,7 @@ func TestGenerateBosslist(t *testing.T) {
 	bl.Update().AddParticipants(p)
 
 	r := utils.GenerateBosslist(bl)
-	assert.Equal(t, r, "feru at 2022-09-09 14:30\n\n\nek\n\ned\n\nshooter\n\nshooter\n\nshooter\n")
+	assert.Equal(t, r, "feru at 2022-09-09 00:00\n\n\nek\n\ned\n\nshooter\n\nshooter\n\nshooter\n")
 }
 
 func initFactory() *carrier.EntFactory {
