@@ -70,7 +70,8 @@ func TestGenerateBosslist(t *testing.T) {
 		t.Fail()
 	}
 
-	bl, err := factory.BosslistFactory().SetBoss(b).Create(context.TODO())
+	startsat, _ := time.Parse("2006-01-02", "2022-09-09")
+	bl, err := factory.BosslistFactory().SetBoss(b).SetStartsAt(startsat).Create(context.TODO())
 	if err != nil {
 		t.Fail()
 	}
