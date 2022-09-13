@@ -19,10 +19,9 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/mattn/go-shellwords"
 	"github.com/mozillazg/go-unidecode"
-	"github.com/thoas/go-funk"
-
 	"github.com/sergot/tibiago/ent"
 	"github.com/sergot/tibiago/src/models"
+	"github.com/thoas/go-funk"
 )
 
 func ParseCmd(m *discordgo.MessageCreate, instance *models.Instance) (*models.Cmd, error) {
