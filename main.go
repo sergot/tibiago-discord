@@ -1,8 +1,6 @@
 package main
 
-import (
-	"github.com/sergot/tibiago/src/cmd"
-)
+import "github.com/sergot/tibiago/cmd"
 
 func main() {
 	cmd.Execute()
