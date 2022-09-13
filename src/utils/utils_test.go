@@ -7,9 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sergot/tibiago/carrier"
 	"github.com/sergot/tibiago/ent"
+	"github.com/sergot/tibiago/src/models"
 	"github.com/sergot/tibiago/src/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -124,4 +126,33 @@ func initParticipantFactory(f *carrier.EntFactory) {
 		SetDiscordIDDefault("1").
 		SetVocationDefault("ek")
 	f.SetParticipantFactory(meta.Build())
+}
+
+func TestParseCmd(t *testing.T) {
+	instance := &models.Instance{
+		Config: &models.Config{
+			Bot: struct {
+				CmdPrefix      string
+				VocationEmojis map[string]string `yaml:"vocationEmojis"`
+			}{
+				CmdPrefix: "!",
+			},
+		},
+	}
+
+	messageCreate := &discordgo.MessageCreate{
+		Message: &discordgo.Message{
+			ID:        "t",
+			Content:   "!create a b c d e",
+			ChannelID: "t",
+			Author: &discordgo.User{
+				ID: "t",
+			},
+		},
+	}
+
+	cmd, err := utils.ParseCmd(messageCreate, instance)
+	assert.Nil(t, err)
+	assert.Equal(t, cmd.Command, "create")
+	assert.Equal(t, len(cmd.Args), 5)
 }
