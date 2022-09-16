@@ -34,11 +34,13 @@ const (
 	BossInverseTable = "bosses"
 	// BossColumn is the table column denoting the boss relation/edge.
 	BossColumn = "boss_bosslists"
-	// ParticipantsTable is the table that holds the participants relation/edge. The primary key declared below.
-	ParticipantsTable = "bosslist_participants"
+	// ParticipantsTable is the table that holds the participants relation/edge.
+	ParticipantsTable = "participants"
 	// ParticipantsInverseTable is the table name for the Participant entity.
 	// It exists in this package in order to avoid circular dependency with the "participant" package.
 	ParticipantsInverseTable = "participants"
+	// ParticipantsColumn is the table column denoting the participants relation/edge.
+	ParticipantsColumn = "bosslist_participants"
 )
 
 // Columns holds all SQL columns for bosslist fields.
@@ -55,12 +57,6 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"boss_bosslists",
 }
-
-var (
-	// ParticipantsPrimaryKey and ParticipantsColumn2 are the table columns denoting the
-	// primary key for the participants relation (M2M).
-	ParticipantsPrimaryKey = []string{"bosslist_id", "participant_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

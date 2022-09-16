@@ -228,7 +228,7 @@ func HasBosslist() predicate.Participant {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(BosslistTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, BosslistTable, BosslistPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, BosslistTable, BosslistColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -240,7 +240,7 @@ func HasBosslistWith(preds ...predicate.Bosslist) predicate.Participant {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(BosslistInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, BosslistTable, BosslistPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, BosslistTable, BosslistColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

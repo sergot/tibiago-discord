@@ -8,6 +8,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
+	"github.com/sergot/tibiago/ent/bosslist"
 	"github.com/sergot/tibiago/ent/participant"
 )
 
@@ -22,22 +23,27 @@ type Participant struct {
 	DiscordID string `json:"discord_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ParticipantQuery when eager-loading is set.
-	Edges ParticipantEdges `json:"edges"`
+	Edges                 ParticipantEdges `json:"edges"`
+	bosslist_participants *uuid.UUID
 }
 
 // ParticipantEdges holds the relations/edges for other nodes in the graph.
 type ParticipantEdges struct {
 	// Bosslist holds the value of the bosslist edge.
-	Bosslist []*Bosslist `json:"bosslist,omitempty"`
+	Bosslist *Bosslist `json:"bosslist,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 }
 
 // BosslistOrErr returns the Bosslist value or an error if the edge
-// was not loaded in eager-loading.
-func (e ParticipantEdges) BosslistOrErr() ([]*Bosslist, error) {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ParticipantEdges) BosslistOrErr() (*Bosslist, error) {
 	if e.loadedTypes[0] {
+		if e.Bosslist == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: bosslist.Label}
+		}
 		return e.Bosslist, nil
 	}
 	return nil, &NotLoadedError{edge: "bosslist"}
@@ -52,6 +58,8 @@ func (*Participant) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullString)
 		case participant.FieldID:
 			values[i] = new(uuid.UUID)
+		case participant.ForeignKeys[0]: // bosslist_participants
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Participant", columns[i])
 		}
@@ -84,6 +92,13 @@ func (pa *Participant) assignValues(columns []string, values []interface{}) erro
 				return fmt.Errorf("unexpected type %T for field discord_id", values[i])
 			} else if value.Valid {
 				pa.DiscordID = value.String
+			}
+		case participant.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field bosslist_participants", values[i])
+			} else if value.Valid {
+				pa.bosslist_participants = new(uuid.UUID)
+				*pa.bosslist_participants = *value.S.(*uuid.UUID)
 			}
 		}
 	}

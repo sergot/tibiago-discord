@@ -35,6 +35,32 @@ func (f BosslistFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return f(ctx, mv)
 }
 
+// The InstanceFunc type is an adapter to allow the use of ordinary
+// function as Instance mutator.
+type InstanceFunc func(context.Context, *ent.InstanceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f InstanceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.InstanceMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.InstanceMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The InstanceConfigFunc type is an adapter to allow the use of ordinary
+// function as InstanceConfig mutator.
+type InstanceConfigFunc func(context.Context, *ent.InstanceConfigMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f InstanceConfigFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.InstanceConfigMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.InstanceConfigMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The ParticipantFunc type is an adapter to allow the use of ordinary
 // function as Participant mutator.
 type ParticipantFunc func(context.Context, *ent.ParticipantMutation) (ent.Value, error)

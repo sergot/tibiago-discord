@@ -12,6 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sergot/tibiago/ent/boss"
 	"github.com/sergot/tibiago/ent/bosslist"
+	"github.com/sergot/tibiago/ent/instance"
+	"github.com/sergot/tibiago/ent/instanceconfig"
 	"github.com/sergot/tibiago/ent/participant"
 	"github.com/sergot/tibiago/ent/predicate"
 
@@ -27,9 +29,11 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeBoss        = "Boss"
-	TypeBosslist    = "Bosslist"
-	TypeParticipant = "Participant"
+	TypeBoss           = "Boss"
+	TypeBosslist       = "Bosslist"
+	TypeInstance       = "Instance"
+	TypeInstanceConfig = "InstanceConfig"
+	TypeParticipant    = "Participant"
 )
 
 // BossMutation represents an operation that mutates the Boss nodes in the graph.
@@ -1168,6 +1172,856 @@ func (m *BosslistMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Bosslist edge %s", name)
 }
 
+// InstanceMutation represents an operation that mutates the Instance nodes in the graph.
+type InstanceMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *uuid.UUID
+	session_id     *string
+	clearedFields  map[string]struct{}
+	_config        map[uuid.UUID]struct{}
+	removed_config map[uuid.UUID]struct{}
+	cleared_config bool
+	done           bool
+	oldValue       func(context.Context) (*Instance, error)
+	predicates     []predicate.Instance
+}
+
+var _ ent.Mutation = (*InstanceMutation)(nil)
+
+// instanceOption allows management of the mutation configuration using functional options.
+type instanceOption func(*InstanceMutation)
+
+// newInstanceMutation creates new mutation for the Instance entity.
+func newInstanceMutation(c config, op Op, opts ...instanceOption) *InstanceMutation {
+	m := &InstanceMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeInstance,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withInstanceID sets the ID field of the mutation.
+func withInstanceID(id uuid.UUID) instanceOption {
+	return func(m *InstanceMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Instance
+		)
+		m.oldValue = func(ctx context.Context) (*Instance, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Instance.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withInstance sets the old Instance of the mutation.
+func withInstance(node *Instance) instanceOption {
+	return func(m *InstanceMutation) {
+		m.oldValue = func(context.Context) (*Instance, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m InstanceMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m InstanceMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Instance entities.
+func (m *InstanceMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *InstanceMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *InstanceMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Instance.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetSessionID sets the "session_id" field.
+func (m *InstanceMutation) SetSessionID(s string) {
+	m.session_id = &s
+}
+
+// SessionID returns the value of the "session_id" field in the mutation.
+func (m *InstanceMutation) SessionID() (r string, exists bool) {
+	v := m.session_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSessionID returns the old "session_id" field's value of the Instance entity.
+// If the Instance object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *InstanceMutation) OldSessionID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSessionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSessionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSessionID: %w", err)
+	}
+	return oldValue.SessionID, nil
+}
+
+// ResetSessionID resets all changes to the "session_id" field.
+func (m *InstanceMutation) ResetSessionID() {
+	m.session_id = nil
+}
+
+// AddConfigIDs adds the "config" edge to the InstanceConfig entity by ids.
+func (m *InstanceMutation) AddConfigIDs(ids ...uuid.UUID) {
+	if m._config == nil {
+		m._config = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m._config[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConfig clears the "config" edge to the InstanceConfig entity.
+func (m *InstanceMutation) ClearConfig() {
+	m.cleared_config = true
+}
+
+// ConfigCleared reports if the "config" edge to the InstanceConfig entity was cleared.
+func (m *InstanceMutation) ConfigCleared() bool {
+	return m.cleared_config
+}
+
+// RemoveConfigIDs removes the "config" edge to the InstanceConfig entity by IDs.
+func (m *InstanceMutation) RemoveConfigIDs(ids ...uuid.UUID) {
+	if m.removed_config == nil {
+		m.removed_config = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m._config, ids[i])
+		m.removed_config[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConfig returns the removed IDs of the "config" edge to the InstanceConfig entity.
+func (m *InstanceMutation) RemovedConfigIDs() (ids []uuid.UUID) {
+	for id := range m.removed_config {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConfigIDs returns the "config" edge IDs in the mutation.
+func (m *InstanceMutation) ConfigIDs() (ids []uuid.UUID) {
+	for id := range m._config {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConfig resets all changes to the "config" edge.
+func (m *InstanceMutation) ResetConfig() {
+	m._config = nil
+	m.cleared_config = false
+	m.removed_config = nil
+}
+
+// Where appends a list predicates to the InstanceMutation builder.
+func (m *InstanceMutation) Where(ps ...predicate.Instance) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *InstanceMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Instance).
+func (m *InstanceMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *InstanceMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.session_id != nil {
+		fields = append(fields, instance.FieldSessionID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *InstanceMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case instance.FieldSessionID:
+		return m.SessionID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *InstanceMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case instance.FieldSessionID:
+		return m.OldSessionID(ctx)
+	}
+	return nil, fmt.Errorf("unknown Instance field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *InstanceMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case instance.FieldSessionID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSessionID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Instance field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *InstanceMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *InstanceMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *InstanceMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Instance numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *InstanceMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *InstanceMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *InstanceMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Instance nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *InstanceMutation) ResetField(name string) error {
+	switch name {
+	case instance.FieldSessionID:
+		m.ResetSessionID()
+		return nil
+	}
+	return fmt.Errorf("unknown Instance field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *InstanceMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m._config != nil {
+		edges = append(edges, instance.EdgeConfig)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *InstanceMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case instance.EdgeConfig:
+		ids := make([]ent.Value, 0, len(m._config))
+		for id := range m._config {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *InstanceMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removed_config != nil {
+		edges = append(edges, instance.EdgeConfig)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *InstanceMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case instance.EdgeConfig:
+		ids := make([]ent.Value, 0, len(m.removed_config))
+		for id := range m.removed_config {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *InstanceMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleared_config {
+		edges = append(edges, instance.EdgeConfig)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *InstanceMutation) EdgeCleared(name string) bool {
+	switch name {
+	case instance.EdgeConfig:
+		return m.cleared_config
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *InstanceMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Instance unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *InstanceMutation) ResetEdge(name string) error {
+	switch name {
+	case instance.EdgeConfig:
+		m.ResetConfig()
+		return nil
+	}
+	return fmt.Errorf("unknown Instance edge %s", name)
+}
+
+// InstanceConfigMutation represents an operation that mutates the InstanceConfig nodes in the graph.
+type InstanceConfigMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *uuid.UUID
+	key             *string
+	value           *string
+	clearedFields   map[string]struct{}
+	instance        *uuid.UUID
+	clearedinstance bool
+	done            bool
+	oldValue        func(context.Context) (*InstanceConfig, error)
+	predicates      []predicate.InstanceConfig
+}
+
+var _ ent.Mutation = (*InstanceConfigMutation)(nil)
+
+// instanceconfigOption allows management of the mutation configuration using functional options.
+type instanceconfigOption func(*InstanceConfigMutation)
+
+// newInstanceConfigMutation creates new mutation for the InstanceConfig entity.
+func newInstanceConfigMutation(c config, op Op, opts ...instanceconfigOption) *InstanceConfigMutation {
+	m := &InstanceConfigMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeInstanceConfig,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withInstanceConfigID sets the ID field of the mutation.
+func withInstanceConfigID(id uuid.UUID) instanceconfigOption {
+	return func(m *InstanceConfigMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *InstanceConfig
+		)
+		m.oldValue = func(ctx context.Context) (*InstanceConfig, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().InstanceConfig.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withInstanceConfig sets the old InstanceConfig of the mutation.
+func withInstanceConfig(node *InstanceConfig) instanceconfigOption {
+	return func(m *InstanceConfigMutation) {
+		m.oldValue = func(context.Context) (*InstanceConfig, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m InstanceConfigMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m InstanceConfigMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of InstanceConfig entities.
+func (m *InstanceConfigMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *InstanceConfigMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *InstanceConfigMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().InstanceConfig.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetKey sets the "key" field.
+func (m *InstanceConfigMutation) SetKey(s string) {
+	m.key = &s
+}
+
+// Key returns the value of the "key" field in the mutation.
+func (m *InstanceConfigMutation) Key() (r string, exists bool) {
+	v := m.key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKey returns the old "key" field's value of the InstanceConfig entity.
+// If the InstanceConfig object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *InstanceConfigMutation) OldKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKey: %w", err)
+	}
+	return oldValue.Key, nil
+}
+
+// ResetKey resets all changes to the "key" field.
+func (m *InstanceConfigMutation) ResetKey() {
+	m.key = nil
+}
+
+// SetValue sets the "value" field.
+func (m *InstanceConfigMutation) SetValue(s string) {
+	m.value = &s
+}
+
+// Value returns the value of the "value" field in the mutation.
+func (m *InstanceConfigMutation) Value() (r string, exists bool) {
+	v := m.value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValue returns the old "value" field's value of the InstanceConfig entity.
+// If the InstanceConfig object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *InstanceConfigMutation) OldValue(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValue: %w", err)
+	}
+	return oldValue.Value, nil
+}
+
+// ResetValue resets all changes to the "value" field.
+func (m *InstanceConfigMutation) ResetValue() {
+	m.value = nil
+}
+
+// SetInstanceID sets the "instance" edge to the Instance entity by id.
+func (m *InstanceConfigMutation) SetInstanceID(id uuid.UUID) {
+	m.instance = &id
+}
+
+// ClearInstance clears the "instance" edge to the Instance entity.
+func (m *InstanceConfigMutation) ClearInstance() {
+	m.clearedinstance = true
+}
+
+// InstanceCleared reports if the "instance" edge to the Instance entity was cleared.
+func (m *InstanceConfigMutation) InstanceCleared() bool {
+	return m.clearedinstance
+}
+
+// InstanceID returns the "instance" edge ID in the mutation.
+func (m *InstanceConfigMutation) InstanceID() (id uuid.UUID, exists bool) {
+	if m.instance != nil {
+		return *m.instance, true
+	}
+	return
+}
+
+// InstanceIDs returns the "instance" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// InstanceID instead. It exists only for internal usage by the builders.
+func (m *InstanceConfigMutation) InstanceIDs() (ids []uuid.UUID) {
+	if id := m.instance; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetInstance resets all changes to the "instance" edge.
+func (m *InstanceConfigMutation) ResetInstance() {
+	m.instance = nil
+	m.clearedinstance = false
+}
+
+// Where appends a list predicates to the InstanceConfigMutation builder.
+func (m *InstanceConfigMutation) Where(ps ...predicate.InstanceConfig) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *InstanceConfigMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (InstanceConfig).
+func (m *InstanceConfigMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *InstanceConfigMutation) Fields() []string {
+	fields := make([]string, 0, 2)
+	if m.key != nil {
+		fields = append(fields, instanceconfig.FieldKey)
+	}
+	if m.value != nil {
+		fields = append(fields, instanceconfig.FieldValue)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *InstanceConfigMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case instanceconfig.FieldKey:
+		return m.Key()
+	case instanceconfig.FieldValue:
+		return m.Value()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *InstanceConfigMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case instanceconfig.FieldKey:
+		return m.OldKey(ctx)
+	case instanceconfig.FieldValue:
+		return m.OldValue(ctx)
+	}
+	return nil, fmt.Errorf("unknown InstanceConfig field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *InstanceConfigMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case instanceconfig.FieldKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKey(v)
+		return nil
+	case instanceconfig.FieldValue:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValue(v)
+		return nil
+	}
+	return fmt.Errorf("unknown InstanceConfig field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *InstanceConfigMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *InstanceConfigMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *InstanceConfigMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown InstanceConfig numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *InstanceConfigMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *InstanceConfigMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *InstanceConfigMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown InstanceConfig nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *InstanceConfigMutation) ResetField(name string) error {
+	switch name {
+	case instanceconfig.FieldKey:
+		m.ResetKey()
+		return nil
+	case instanceconfig.FieldValue:
+		m.ResetValue()
+		return nil
+	}
+	return fmt.Errorf("unknown InstanceConfig field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *InstanceConfigMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.instance != nil {
+		edges = append(edges, instanceconfig.EdgeInstance)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *InstanceConfigMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case instanceconfig.EdgeInstance:
+		if id := m.instance; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *InstanceConfigMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *InstanceConfigMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *InstanceConfigMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedinstance {
+		edges = append(edges, instanceconfig.EdgeInstance)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *InstanceConfigMutation) EdgeCleared(name string) bool {
+	switch name {
+	case instanceconfig.EdgeInstance:
+		return m.clearedinstance
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *InstanceConfigMutation) ClearEdge(name string) error {
+	switch name {
+	case instanceconfig.EdgeInstance:
+		m.ClearInstance()
+		return nil
+	}
+	return fmt.Errorf("unknown InstanceConfig unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *InstanceConfigMutation) ResetEdge(name string) error {
+	switch name {
+	case instanceconfig.EdgeInstance:
+		m.ResetInstance()
+		return nil
+	}
+	return fmt.Errorf("unknown InstanceConfig edge %s", name)
+}
+
 // ParticipantMutation represents an operation that mutates the Participant nodes in the graph.
 type ParticipantMutation struct {
 	config
@@ -1177,8 +2031,7 @@ type ParticipantMutation struct {
 	vocation        *participant.Vocation
 	discord_id      *string
 	clearedFields   map[string]struct{}
-	bosslist        map[uuid.UUID]struct{}
-	removedbosslist map[uuid.UUID]struct{}
+	bosslist        *uuid.UUID
 	clearedbosslist bool
 	done            bool
 	oldValue        func(context.Context) (*Participant, error)
@@ -1361,14 +2214,9 @@ func (m *ParticipantMutation) ResetDiscordID() {
 	m.discord_id = nil
 }
 
-// AddBosslistIDs adds the "bosslist" edge to the Bosslist entity by ids.
-func (m *ParticipantMutation) AddBosslistIDs(ids ...uuid.UUID) {
-	if m.bosslist == nil {
-		m.bosslist = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		m.bosslist[ids[i]] = struct{}{}
-	}
+// SetBosslistID sets the "bosslist" edge to the Bosslist entity by id.
+func (m *ParticipantMutation) SetBosslistID(id uuid.UUID) {
+	m.bosslist = &id
 }
 
 // ClearBosslist clears the "bosslist" edge to the Bosslist entity.
@@ -1381,29 +2229,20 @@ func (m *ParticipantMutation) BosslistCleared() bool {
 	return m.clearedbosslist
 }
 
-// RemoveBosslistIDs removes the "bosslist" edge to the Bosslist entity by IDs.
-func (m *ParticipantMutation) RemoveBosslistIDs(ids ...uuid.UUID) {
-	if m.removedbosslist == nil {
-		m.removedbosslist = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		delete(m.bosslist, ids[i])
-		m.removedbosslist[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedBosslist returns the removed IDs of the "bosslist" edge to the Bosslist entity.
-func (m *ParticipantMutation) RemovedBosslistIDs() (ids []uuid.UUID) {
-	for id := range m.removedbosslist {
-		ids = append(ids, id)
+// BosslistID returns the "bosslist" edge ID in the mutation.
+func (m *ParticipantMutation) BosslistID() (id uuid.UUID, exists bool) {
+	if m.bosslist != nil {
+		return *m.bosslist, true
 	}
 	return
 }
 
 // BosslistIDs returns the "bosslist" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// BosslistID instead. It exists only for internal usage by the builders.
 func (m *ParticipantMutation) BosslistIDs() (ids []uuid.UUID) {
-	for id := range m.bosslist {
-		ids = append(ids, id)
+	if id := m.bosslist; id != nil {
+		ids = append(ids, *id)
 	}
 	return
 }
@@ -1412,7 +2251,6 @@ func (m *ParticipantMutation) BosslistIDs() (ids []uuid.UUID) {
 func (m *ParticipantMutation) ResetBosslist() {
 	m.bosslist = nil
 	m.clearedbosslist = false
-	m.removedbosslist = nil
 }
 
 // Where appends a list predicates to the ParticipantMutation builder.
@@ -1562,11 +2400,9 @@ func (m *ParticipantMutation) AddedEdges() []string {
 func (m *ParticipantMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case participant.EdgeBosslist:
-		ids := make([]ent.Value, 0, len(m.bosslist))
-		for id := range m.bosslist {
-			ids = append(ids, id)
+		if id := m.bosslist; id != nil {
+			return []ent.Value{*id}
 		}
-		return ids
 	}
 	return nil
 }
@@ -1574,9 +2410,6 @@ func (m *ParticipantMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ParticipantMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 1)
-	if m.removedbosslist != nil {
-		edges = append(edges, participant.EdgeBosslist)
-	}
 	return edges
 }
 
@@ -1584,12 +2417,6 @@ func (m *ParticipantMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *ParticipantMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case participant.EdgeBosslist:
-		ids := make([]ent.Value, 0, len(m.removedbosslist))
-		for id := range m.removedbosslist {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
@@ -1617,6 +2444,9 @@ func (m *ParticipantMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ParticipantMutation) ClearEdge(name string) error {
 	switch name {
+	case participant.EdgeBosslist:
+		m.ClearBosslist()
+		return nil
 	}
 	return fmt.Errorf("unknown Participant unique edge %s", name)
 }

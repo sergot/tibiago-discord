@@ -70,7 +70,7 @@
     }
 
     
-    const entGraph = JSON.parse("{\"nodes\":[{\"id\":\"Boss\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"template\",\"type\":\"string\"}]},{\"id\":\"Bosslist\",\"fields\":[{\"name\":\"created_at\",\"type\":\"time.Time\"},{\"name\":\"starts_at\",\"type\":\"time.Time\"},{\"name\":\"custom_template\",\"type\":\"string\"},{\"name\":\"discord_message_id\",\"type\":\"string\"}]},{\"id\":\"Participant\",\"fields\":[{\"name\":\"vocation\",\"type\":\"participant.Vocation\"},{\"name\":\"discord_id\",\"type\":\"string\"}]}],\"edges\":[{\"from\":\"Boss\",\"to\":\"Bosslist\",\"label\":\"bosslists\"},{\"from\":\"Bosslist\",\"to\":\"Participant\",\"label\":\"participants\"}]}");
+    const entGraph = JSON.parse("{\"nodes\":[{\"id\":\"Boss\",\"fields\":[{\"name\":\"name\",\"type\":\"string\"},{\"name\":\"template\",\"type\":\"string\"}]},{\"id\":\"Bosslist\",\"fields\":[{\"name\":\"created_at\",\"type\":\"time.Time\"},{\"name\":\"starts_at\",\"type\":\"time.Time\"},{\"name\":\"custom_template\",\"type\":\"string\"},{\"name\":\"discord_message_id\",\"type\":\"string\"}]},{\"id\":\"Instance\",\"fields\":[{\"name\":\"session_id\",\"type\":\"string\"}]},{\"id\":\"InstanceConfig\",\"fields\":[{\"name\":\"key\",\"type\":\"string\"},{\"name\":\"value\",\"type\":\"string\"}]},{\"id\":\"Participant\",\"fields\":[{\"name\":\"vocation\",\"type\":\"participant.Vocation\"},{\"name\":\"discord_id\",\"type\":\"string\"}]}],\"edges\":[{\"from\":\"Boss\",\"to\":\"Bosslist\",\"label\":\"bosslists\"},{\"from\":\"Bosslist\",\"to\":\"Participant\",\"label\":\"participants\"},{\"from\":\"Instance\",\"to\":\"InstanceConfig\",\"label\":\"config\"}]}");
     const nodes = new vis.DataSet((entGraph.nodes || []).map(n =>
     ({
       id: n.id,

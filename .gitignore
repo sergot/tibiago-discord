@@ -10,6 +10,7 @@
 *.so
 *.dylib
 *.env
+tibiago
 
 # Test binary, built with `go test -c`
 *.test

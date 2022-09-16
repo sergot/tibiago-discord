@@ -41,19 +41,23 @@ func (pu *ParticipantUpdate) SetDiscordID(s string) *ParticipantUpdate {
 	return pu
 }
 
-// AddBosslistIDs adds the "bosslist" edge to the Bosslist entity by IDs.
-func (pu *ParticipantUpdate) AddBosslistIDs(ids ...uuid.UUID) *ParticipantUpdate {
-	pu.mutation.AddBosslistIDs(ids...)
+// SetBosslistID sets the "bosslist" edge to the Bosslist entity by ID.
+func (pu *ParticipantUpdate) SetBosslistID(id uuid.UUID) *ParticipantUpdate {
+	pu.mutation.SetBosslistID(id)
 	return pu
 }
 
-// AddBosslist adds the "bosslist" edges to the Bosslist entity.
-func (pu *ParticipantUpdate) AddBosslist(b ...*Bosslist) *ParticipantUpdate {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
+// SetNillableBosslistID sets the "bosslist" edge to the Bosslist entity by ID if the given value is not nil.
+func (pu *ParticipantUpdate) SetNillableBosslistID(id *uuid.UUID) *ParticipantUpdate {
+	if id != nil {
+		pu = pu.SetBosslistID(*id)
 	}
-	return pu.AddBosslistIDs(ids...)
+	return pu
+}
+
+// SetBosslist sets the "bosslist" edge to the Bosslist entity.
+func (pu *ParticipantUpdate) SetBosslist(b *Bosslist) *ParticipantUpdate {
+	return pu.SetBosslistID(b.ID)
 }
 
 // Mutation returns the ParticipantMutation object of the builder.
@@ -61,25 +65,10 @@ func (pu *ParticipantUpdate) Mutation() *ParticipantMutation {
 	return pu.mutation
 }
 
-// ClearBosslist clears all "bosslist" edges to the Bosslist entity.
+// ClearBosslist clears the "bosslist" edge to the Bosslist entity.
 func (pu *ParticipantUpdate) ClearBosslist() *ParticipantUpdate {
 	pu.mutation.ClearBosslist()
 	return pu
-}
-
-// RemoveBosslistIDs removes the "bosslist" edge to Bosslist entities by IDs.
-func (pu *ParticipantUpdate) RemoveBosslistIDs(ids ...uuid.UUID) *ParticipantUpdate {
-	pu.mutation.RemoveBosslistIDs(ids...)
-	return pu
-}
-
-// RemoveBosslist removes "bosslist" edges to Bosslist entities.
-func (pu *ParticipantUpdate) RemoveBosslist(b ...*Bosslist) *ParticipantUpdate {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return pu.RemoveBosslistIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -186,10 +175,10 @@ func (pu *ParticipantUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if pu.mutation.BosslistCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   participant.BosslistTable,
-			Columns: participant.BosslistPrimaryKey,
+			Columns: []string{participant.BosslistColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -197,34 +186,15 @@ func (pu *ParticipantUpdate) sqlSave(ctx context.Context) (n int, err error) {
 					Column: bosslist.FieldID,
 				},
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.RemovedBosslistIDs(); len(nodes) > 0 && !pu.mutation.BosslistCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   participant.BosslistTable,
-			Columns: participant.BosslistPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: bosslist.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := pu.mutation.BosslistIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   participant.BosslistTable,
-			Columns: participant.BosslistPrimaryKey,
+			Columns: []string{participant.BosslistColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -269,19 +239,23 @@ func (puo *ParticipantUpdateOne) SetDiscordID(s string) *ParticipantUpdateOne {
 	return puo
 }
 
-// AddBosslistIDs adds the "bosslist" edge to the Bosslist entity by IDs.
-func (puo *ParticipantUpdateOne) AddBosslistIDs(ids ...uuid.UUID) *ParticipantUpdateOne {
-	puo.mutation.AddBosslistIDs(ids...)
+// SetBosslistID sets the "bosslist" edge to the Bosslist entity by ID.
+func (puo *ParticipantUpdateOne) SetBosslistID(id uuid.UUID) *ParticipantUpdateOne {
+	puo.mutation.SetBosslistID(id)
 	return puo
 }
 
-// AddBosslist adds the "bosslist" edges to the Bosslist entity.
-func (puo *ParticipantUpdateOne) AddBosslist(b ...*Bosslist) *ParticipantUpdateOne {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
+// SetNillableBosslistID sets the "bosslist" edge to the Bosslist entity by ID if the given value is not nil.
+func (puo *ParticipantUpdateOne) SetNillableBosslistID(id *uuid.UUID) *ParticipantUpdateOne {
+	if id != nil {
+		puo = puo.SetBosslistID(*id)
 	}
-	return puo.AddBosslistIDs(ids...)
+	return puo
+}
+
+// SetBosslist sets the "bosslist" edge to the Bosslist entity.
+func (puo *ParticipantUpdateOne) SetBosslist(b *Bosslist) *ParticipantUpdateOne {
+	return puo.SetBosslistID(b.ID)
 }
 
 // Mutation returns the ParticipantMutation object of the builder.
@@ -289,25 +263,10 @@ func (puo *ParticipantUpdateOne) Mutation() *ParticipantMutation {
 	return puo.mutation
 }
 
-// ClearBosslist clears all "bosslist" edges to the Bosslist entity.
+// ClearBosslist clears the "bosslist" edge to the Bosslist entity.
 func (puo *ParticipantUpdateOne) ClearBosslist() *ParticipantUpdateOne {
 	puo.mutation.ClearBosslist()
 	return puo
-}
-
-// RemoveBosslistIDs removes the "bosslist" edge to Bosslist entities by IDs.
-func (puo *ParticipantUpdateOne) RemoveBosslistIDs(ids ...uuid.UUID) *ParticipantUpdateOne {
-	puo.mutation.RemoveBosslistIDs(ids...)
-	return puo
-}
-
-// RemoveBosslist removes "bosslist" edges to Bosslist entities.
-func (puo *ParticipantUpdateOne) RemoveBosslist(b ...*Bosslist) *ParticipantUpdateOne {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return puo.RemoveBosslistIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -444,10 +403,10 @@ func (puo *ParticipantUpdateOne) sqlSave(ctx context.Context) (_node *Participan
 	}
 	if puo.mutation.BosslistCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   participant.BosslistTable,
-			Columns: participant.BosslistPrimaryKey,
+			Columns: []string{participant.BosslistColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -455,34 +414,15 @@ func (puo *ParticipantUpdateOne) sqlSave(ctx context.Context) (_node *Participan
 					Column: bosslist.FieldID,
 				},
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.RemovedBosslistIDs(); len(nodes) > 0 && !puo.mutation.BosslistCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   participant.BosslistTable,
-			Columns: participant.BosslistPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: bosslist.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := puo.mutation.BosslistIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   participant.BosslistTable,
-			Columns: participant.BosslistPrimaryKey,
+			Columns: []string{participant.BosslistColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

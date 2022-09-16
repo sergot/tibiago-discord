@@ -306,10 +306,10 @@ func (bu *BosslistUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if bu.mutation.ParticipantsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   bosslist.ParticipantsTable,
-			Columns: bosslist.ParticipantsPrimaryKey,
+			Columns: []string{bosslist.ParticipantsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -322,10 +322,10 @@ func (bu *BosslistUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := bu.mutation.RemovedParticipantsIDs(); len(nodes) > 0 && !bu.mutation.ParticipantsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   bosslist.ParticipantsTable,
-			Columns: bosslist.ParticipantsPrimaryKey,
+			Columns: []string{bosslist.ParticipantsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -341,10 +341,10 @@ func (bu *BosslistUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := bu.mutation.ParticipantsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   bosslist.ParticipantsTable,
-			Columns: bosslist.ParticipantsPrimaryKey,
+			Columns: []string{bosslist.ParticipantsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -682,10 +682,10 @@ func (buo *BosslistUpdateOne) sqlSave(ctx context.Context) (_node *Bosslist, err
 	}
 	if buo.mutation.ParticipantsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   bosslist.ParticipantsTable,
-			Columns: bosslist.ParticipantsPrimaryKey,
+			Columns: []string{bosslist.ParticipantsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -698,10 +698,10 @@ func (buo *BosslistUpdateOne) sqlSave(ctx context.Context) (_node *Bosslist, err
 	}
 	if nodes := buo.mutation.RemovedParticipantsIDs(); len(nodes) > 0 && !buo.mutation.ParticipantsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   bosslist.ParticipantsTable,
-			Columns: bosslist.ParticipantsPrimaryKey,
+			Columns: []string{bosslist.ParticipantsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -717,10 +717,10 @@ func (buo *BosslistUpdateOne) sqlSave(ctx context.Context) (_node *Bosslist, err
 	}
 	if nodes := buo.mutation.ParticipantsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   bosslist.ParticipantsTable,
-			Columns: bosslist.ParticipantsPrimaryKey,
+			Columns: []string{bosslist.ParticipantsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

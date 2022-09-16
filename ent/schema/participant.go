@@ -4,6 +4,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -30,6 +31,15 @@ func (Participant) Fields() []ent.Field {
 func (Participant) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("bosslist", Bosslist.Type).
-			Ref("participants"),
+			Ref("participants").
+			Unique(),
+	}
+}
+
+func (Participant) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("discord_id").
+			Edges("bosslist").
+			Unique(),
 	}
 }

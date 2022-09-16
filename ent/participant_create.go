@@ -47,19 +47,23 @@ func (pc *ParticipantCreate) SetNillableID(u *uuid.UUID) *ParticipantCreate {
 	return pc
 }
 
-// AddBosslistIDs adds the "bosslist" edge to the Bosslist entity by IDs.
-func (pc *ParticipantCreate) AddBosslistIDs(ids ...uuid.UUID) *ParticipantCreate {
-	pc.mutation.AddBosslistIDs(ids...)
+// SetBosslistID sets the "bosslist" edge to the Bosslist entity by ID.
+func (pc *ParticipantCreate) SetBosslistID(id uuid.UUID) *ParticipantCreate {
+	pc.mutation.SetBosslistID(id)
 	return pc
 }
 
-// AddBosslist adds the "bosslist" edges to the Bosslist entity.
-func (pc *ParticipantCreate) AddBosslist(b ...*Bosslist) *ParticipantCreate {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
+// SetNillableBosslistID sets the "bosslist" edge to the Bosslist entity by ID if the given value is not nil.
+func (pc *ParticipantCreate) SetNillableBosslistID(id *uuid.UUID) *ParticipantCreate {
+	if id != nil {
+		pc = pc.SetBosslistID(*id)
 	}
-	return pc.AddBosslistIDs(ids...)
+	return pc
+}
+
+// SetBosslist sets the "bosslist" edge to the Bosslist entity.
+func (pc *ParticipantCreate) SetBosslist(b *Bosslist) *ParticipantCreate {
+	return pc.SetBosslistID(b.ID)
 }
 
 // Mutation returns the ParticipantMutation object of the builder.
@@ -212,10 +216,10 @@ func (pc *ParticipantCreate) createSpec() (*Participant, *sqlgraph.CreateSpec) {
 	}
 	if nodes := pc.mutation.BosslistIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   participant.BosslistTable,
-			Columns: participant.BosslistPrimaryKey,
+			Columns: []string{participant.BosslistColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -227,6 +231,7 @@ func (pc *ParticipantCreate) createSpec() (*Participant, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.bosslist_participants = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

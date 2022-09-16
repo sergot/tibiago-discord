@@ -42,7 +42,8 @@ func Connect(db string) {
 	s.Identify.Intents = discordgo.MakeIntent(discordgo.IntentGuilds | discordgo.IntentGuildMessages | discordgo.IntentGuildMessageReactions)
 
 	s.AddHandler(ReadyHandler(db))
-	s.AddHandler(ReactionHandler(db))
+	s.AddHandler(ReactionAddHandler(db))
+	s.AddHandler(ReactionRemoveHandler(db))
 	s.AddHandler(CommonHandler(db))
 
 	err = s.Open()

@@ -304,10 +304,10 @@ func (bc *BosslistCreate) createSpec() (*Bosslist, *sqlgraph.CreateSpec) {
 	}
 	if nodes := bc.mutation.ParticipantsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   bosslist.ParticipantsTable,
-			Columns: bosslist.ParticipantsPrimaryKey,
+			Columns: []string{bosslist.ParticipantsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

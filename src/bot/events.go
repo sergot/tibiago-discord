@@ -45,7 +45,63 @@ func ReadyHandler(db string) func(s *discordgo.Session, r *discordgo.Ready) {
 	}
 }
 
-func ReactionHandler(db string) func(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
+func ReactionRemoveHandler(db string) func(s *discordgo.Session, m *discordgo.MessageReactionRemove) {
+	return func(s *discordgo.Session, m *discordgo.MessageReactionRemove) {
+		message, err := s.ChannelMessage(m.ChannelID, m.MessageID)
+		if err != nil {
+			log.Println(err)
+		}
+
+		me, err := s.User("@me")
+		if err != nil {
+			log.Println("Error obtaining account details,", err)
+		}
+
+		if me.ID != message.Author.ID {
+			return
+		}
+
+		client, err := models.ConnectDatabase()
+		if err != nil {
+			log.Println(err)
+		}
+		defer client.Close()
+
+		bl, err := client.Bosslist.
+			Query().
+			Where(bosslist.DiscordMessageID(m.MessageID)).
+			WithParticipants().
+			Only(context.Background())
+		if err != nil {
+			log.Println(err)
+		}
+
+		p, err := bl.QueryParticipants().
+			Where(participant.DiscordID(m.UserID)).
+			// Where(vocation)
+			Only(context.Background())
+		if err != nil {
+			log.Println(err)
+		}
+
+		err = client.Participant.
+			DeleteOneID(p.ID).
+			Exec(context.Background())
+		if err != nil {
+			log.Println(err)
+		}
+
+		list := utils.GenerateBosslist(bl)
+
+		_, err = s.ChannelMessageEdit(message.ChannelID, message.ID, list)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
+}
+
+func ReactionAddHandler(db string) func(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 	return func(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 		message, err := s.ChannelMessage(m.ChannelID, m.MessageID)
 		if err != nil {
@@ -81,6 +137,8 @@ func ReactionHandler(db string) func(s *discordgo.Session, m *discordgo.MessageR
 			SetDiscordID(m.UserID).
 			Save(context.Background())
 		if err != nil {
+			_ = s.MessageReactionRemove(m.ChannelID, m.MessageID, m.Emoji.ID, m.UserID)
+			// TODO: handle unique contraint violation (priv msg to the user?)
 			log.Println(err)
 			return
 		}
@@ -97,13 +155,6 @@ func ReactionHandler(db string) func(s *discordgo.Session, m *discordgo.MessageR
 		_, err = bl.Update().
 			AddParticipants(p).
 			Save(context.Background())
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		// TODO: leave the reaction?
-		err = s.MessageReactionRemove(message.ChannelID, message.ID, m.Emoji.APIName(), m.UserID)
 		if err != nil {
 			log.Println(err)
 			return

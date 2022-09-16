@@ -22,11 +22,6 @@ func RunCommand(s *discordgo.Session, cmd *models.Cmd) error {
 		}
 		defer client.Close()
 
-		// if err := client.Schema.Create(context.Background()); err != nil {
-		// 	return err
-		// }
-
-		// args
 		var hours int
 		hours, err = strconv.Atoi(cmd.Args[2])
 		if err != nil {

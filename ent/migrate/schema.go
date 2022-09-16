@@ -43,40 +43,70 @@ var (
 			},
 		},
 	}
+	// InstancesColumns holds the columns for the "instances" table.
+	InstancesColumns = []*schema.Column{
+		{Name: "uuid", Type: field.TypeUUID},
+		{Name: "session_id", Type: field.TypeString},
+	}
+	// InstancesTable holds the schema information for the "instances" table.
+	InstancesTable = &schema.Table{
+		Name:       "instances",
+		Columns:    InstancesColumns,
+		PrimaryKey: []*schema.Column{InstancesColumns[0]},
+	}
+	// InstanceConfigsColumns holds the columns for the "instance_configs" table.
+	InstanceConfigsColumns = []*schema.Column{
+		{Name: "uuid", Type: field.TypeUUID},
+		{Name: "key", Type: field.TypeString},
+		{Name: "value", Type: field.TypeString},
+		{Name: "instance_config", Type: field.TypeUUID, Nullable: true},
+	}
+	// InstanceConfigsTable holds the schema information for the "instance_configs" table.
+	InstanceConfigsTable = &schema.Table{
+		Name:       "instance_configs",
+		Columns:    InstanceConfigsColumns,
+		PrimaryKey: []*schema.Column{InstanceConfigsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "instance_configs_instances_config",
+				Columns:    []*schema.Column{InstanceConfigsColumns[3]},
+				RefColumns: []*schema.Column{InstancesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "instanceconfig_key_instance_config",
+				Unique:  true,
+				Columns: []*schema.Column{InstanceConfigsColumns[1], InstanceConfigsColumns[3]},
+			},
+		},
+	}
 	// ParticipantsColumns holds the columns for the "participants" table.
 	ParticipantsColumns = []*schema.Column{
 		{Name: "uuid", Type: field.TypeUUID},
 		{Name: "vocation", Type: field.TypeEnum, Enums: []string{"ek", "ed", "ms", "rp"}},
 		{Name: "discord_id", Type: field.TypeString},
+		{Name: "bosslist_participants", Type: field.TypeUUID, Nullable: true},
 	}
 	// ParticipantsTable holds the schema information for the "participants" table.
 	ParticipantsTable = &schema.Table{
 		Name:       "participants",
 		Columns:    ParticipantsColumns,
 		PrimaryKey: []*schema.Column{ParticipantsColumns[0]},
-	}
-	// BosslistParticipantsColumns holds the columns for the "bosslist_participants" table.
-	BosslistParticipantsColumns = []*schema.Column{
-		{Name: "bosslist_id", Type: field.TypeUUID},
-		{Name: "participant_id", Type: field.TypeUUID},
-	}
-	// BosslistParticipantsTable holds the schema information for the "bosslist_participants" table.
-	BosslistParticipantsTable = &schema.Table{
-		Name:       "bosslist_participants",
-		Columns:    BosslistParticipantsColumns,
-		PrimaryKey: []*schema.Column{BosslistParticipantsColumns[0], BosslistParticipantsColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "bosslist_participants_bosslist_id",
-				Columns:    []*schema.Column{BosslistParticipantsColumns[0]},
+				Symbol:     "participants_bosslists_participants",
+				Columns:    []*schema.Column{ParticipantsColumns[3]},
 				RefColumns: []*schema.Column{BosslistsColumns[0]},
-				OnDelete:   schema.Cascade,
+				OnDelete:   schema.SetNull,
 			},
+		},
+		Indexes: []*schema.Index{
 			{
-				Symbol:     "bosslist_participants_participant_id",
-				Columns:    []*schema.Column{BosslistParticipantsColumns[1]},
-				RefColumns: []*schema.Column{ParticipantsColumns[0]},
-				OnDelete:   schema.Cascade,
+				Name:    "participant_discord_id_bosslist_participants",
+				Unique:  true,
+				Columns: []*schema.Column{ParticipantsColumns[2], ParticipantsColumns[3]},
 			},
 		},
 	}
@@ -84,13 +114,14 @@ var (
 	Tables = []*schema.Table{
 		BossesTable,
 		BosslistsTable,
+		InstancesTable,
+		InstanceConfigsTable,
 		ParticipantsTable,
-		BosslistParticipantsTable,
 	}
 )
 
 func init() {
 	BosslistsTable.ForeignKeys[0].RefTable = BossesTable
-	BosslistParticipantsTable.ForeignKeys[0].RefTable = BosslistsTable
-	BosslistParticipantsTable.ForeignKeys[1].RefTable = ParticipantsTable
+	InstanceConfigsTable.ForeignKeys[0].RefTable = InstancesTable
+	ParticipantsTable.ForeignKeys[0].RefTable = BosslistsTable
 }

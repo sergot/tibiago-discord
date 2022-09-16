@@ -12,5 +12,11 @@ type Boss func(*sql.Selector)
 // Bosslist is the predicate function for bosslist builders.
 type Bosslist func(*sql.Selector)
 
+// Instance is the predicate function for instance builders.
+type Instance func(*sql.Selector)
+
+// InstanceConfig is the predicate function for instanceconfig builders.
+type InstanceConfig func(*sql.Selector)
+
 // Participant is the predicate function for participant builders.
 type Participant func(*sql.Selector)

@@ -12,6 +12,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/sergot/tibiago/ent/boss"
 	"github.com/sergot/tibiago/ent/bosslist"
+	"github.com/sergot/tibiago/ent/instance"
+	"github.com/sergot/tibiago/ent/instanceconfig"
 	"github.com/sergot/tibiago/ent/participant"
 )
 
@@ -33,9 +35,11 @@ type OrderFunc func(*sql.Selector)
 // columnChecker returns a function indicates if the column exists in the given column.
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
-		boss.Table:        boss.ValidColumn,
-		bosslist.Table:    bosslist.ValidColumn,
-		participant.Table: participant.ValidColumn,
+		boss.Table:           boss.ValidColumn,
+		bosslist.Table:       bosslist.ValidColumn,
+		instance.Table:       instance.ValidColumn,
+		instanceconfig.Table: instanceconfig.ValidColumn,
+		participant.Table:    participant.ValidColumn,
 	}
 	check, ok := checks[table]
 	if !ok {

@@ -16,6 +16,10 @@ type Tx struct {
 	Boss *BossClient
 	// Bosslist is the client for interacting with the Bosslist builders.
 	Bosslist *BosslistClient
+	// Instance is the client for interacting with the Instance builders.
+	Instance *InstanceClient
+	// InstanceConfig is the client for interacting with the InstanceConfig builders.
+	InstanceConfig *InstanceConfigClient
 	// Participant is the client for interacting with the Participant builders.
 	Participant *ParticipantClient
 
@@ -155,6 +159,8 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.Boss = NewBossClient(tx.config)
 	tx.Bosslist = NewBosslistClient(tx.config)
+	tx.Instance = NewInstanceClient(tx.config)
+	tx.InstanceConfig = NewInstanceConfigClient(tx.config)
 	tx.Participant = NewParticipantClient(tx.config)
 }
 

@@ -13,6 +13,8 @@ import (
 
 	"github.com/sergot/tibiago/ent/boss"
 	"github.com/sergot/tibiago/ent/bosslist"
+	"github.com/sergot/tibiago/ent/instance"
+	"github.com/sergot/tibiago/ent/instanceconfig"
 	"github.com/sergot/tibiago/ent/participant"
 
 	"entgo.io/ent/dialect"
@@ -29,6 +31,10 @@ type Client struct {
 	Boss *BossClient
 	// Bosslist is the client for interacting with the Bosslist builders.
 	Bosslist *BosslistClient
+	// Instance is the client for interacting with the Instance builders.
+	Instance *InstanceClient
+	// InstanceConfig is the client for interacting with the InstanceConfig builders.
+	InstanceConfig *InstanceConfigClient
 	// Participant is the client for interacting with the Participant builders.
 	Participant *ParticipantClient
 }
@@ -46,6 +52,8 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Boss = NewBossClient(c.config)
 	c.Bosslist = NewBosslistClient(c.config)
+	c.Instance = NewInstanceClient(c.config)
+	c.InstanceConfig = NewInstanceConfigClient(c.config)
 	c.Participant = NewParticipantClient(c.config)
 }
 
@@ -78,11 +86,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:         ctx,
-		config:      cfg,
-		Boss:        NewBossClient(cfg),
-		Bosslist:    NewBosslistClient(cfg),
-		Participant: NewParticipantClient(cfg),
+		ctx:            ctx,
+		config:         cfg,
+		Boss:           NewBossClient(cfg),
+		Bosslist:       NewBosslistClient(cfg),
+		Instance:       NewInstanceClient(cfg),
+		InstanceConfig: NewInstanceConfigClient(cfg),
+		Participant:    NewParticipantClient(cfg),
 	}, nil
 }
 
@@ -100,11 +110,13 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:         ctx,
-		config:      cfg,
-		Boss:        NewBossClient(cfg),
-		Bosslist:    NewBosslistClient(cfg),
-		Participant: NewParticipantClient(cfg),
+		ctx:            ctx,
+		config:         cfg,
+		Boss:           NewBossClient(cfg),
+		Bosslist:       NewBosslistClient(cfg),
+		Instance:       NewInstanceClient(cfg),
+		InstanceConfig: NewInstanceConfigClient(cfg),
+		Participant:    NewParticipantClient(cfg),
 	}, nil
 }
 
@@ -135,6 +147,8 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	c.Boss.Use(hooks...)
 	c.Bosslist.Use(hooks...)
+	c.Instance.Use(hooks...)
+	c.InstanceConfig.Use(hooks...)
 	c.Participant.Use(hooks...)
 }
 
@@ -353,7 +367,7 @@ func (c *BosslistClient) QueryParticipants(b *Bosslist) *ParticipantQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(bosslist.Table, bosslist.FieldID, id),
 			sqlgraph.To(participant.Table, participant.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, bosslist.ParticipantsTable, bosslist.ParticipantsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, bosslist.ParticipantsTable, bosslist.ParticipantsColumn),
 		)
 		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
 		return fromV, nil
@@ -364,6 +378,218 @@ func (c *BosslistClient) QueryParticipants(b *Bosslist) *ParticipantQuery {
 // Hooks returns the client hooks.
 func (c *BosslistClient) Hooks() []Hook {
 	return c.hooks.Bosslist
+}
+
+// InstanceClient is a client for the Instance schema.
+type InstanceClient struct {
+	config
+}
+
+// NewInstanceClient returns a client for the Instance from the given config.
+func NewInstanceClient(c config) *InstanceClient {
+	return &InstanceClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `instance.Hooks(f(g(h())))`.
+func (c *InstanceClient) Use(hooks ...Hook) {
+	c.hooks.Instance = append(c.hooks.Instance, hooks...)
+}
+
+// Create returns a builder for creating a Instance entity.
+func (c *InstanceClient) Create() *InstanceCreate {
+	mutation := newInstanceMutation(c.config, OpCreate)
+	return &InstanceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Instance entities.
+func (c *InstanceClient) CreateBulk(builders ...*InstanceCreate) *InstanceCreateBulk {
+	return &InstanceCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Instance.
+func (c *InstanceClient) Update() *InstanceUpdate {
+	mutation := newInstanceMutation(c.config, OpUpdate)
+	return &InstanceUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *InstanceClient) UpdateOne(i *Instance) *InstanceUpdateOne {
+	mutation := newInstanceMutation(c.config, OpUpdateOne, withInstance(i))
+	return &InstanceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *InstanceClient) UpdateOneID(id uuid.UUID) *InstanceUpdateOne {
+	mutation := newInstanceMutation(c.config, OpUpdateOne, withInstanceID(id))
+	return &InstanceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Instance.
+func (c *InstanceClient) Delete() *InstanceDelete {
+	mutation := newInstanceMutation(c.config, OpDelete)
+	return &InstanceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *InstanceClient) DeleteOne(i *Instance) *InstanceDeleteOne {
+	return c.DeleteOneID(i.ID)
+}
+
+// DeleteOne returns a builder for deleting the given entity by its id.
+func (c *InstanceClient) DeleteOneID(id uuid.UUID) *InstanceDeleteOne {
+	builder := c.Delete().Where(instance.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &InstanceDeleteOne{builder}
+}
+
+// Query returns a query builder for Instance.
+func (c *InstanceClient) Query() *InstanceQuery {
+	return &InstanceQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Instance entity by its id.
+func (c *InstanceClient) Get(ctx context.Context, id uuid.UUID) (*Instance, error) {
+	return c.Query().Where(instance.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *InstanceClient) GetX(ctx context.Context, id uuid.UUID) *Instance {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryConfig queries the config edge of a Instance.
+func (c *InstanceClient) QueryConfig(i *Instance) *InstanceConfigQuery {
+	query := &InstanceConfigQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := i.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(instance.Table, instance.FieldID, id),
+			sqlgraph.To(instanceconfig.Table, instanceconfig.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, instance.ConfigTable, instance.ConfigColumn),
+		)
+		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *InstanceClient) Hooks() []Hook {
+	return c.hooks.Instance
+}
+
+// InstanceConfigClient is a client for the InstanceConfig schema.
+type InstanceConfigClient struct {
+	config
+}
+
+// NewInstanceConfigClient returns a client for the InstanceConfig from the given config.
+func NewInstanceConfigClient(c config) *InstanceConfigClient {
+	return &InstanceConfigClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `instanceconfig.Hooks(f(g(h())))`.
+func (c *InstanceConfigClient) Use(hooks ...Hook) {
+	c.hooks.InstanceConfig = append(c.hooks.InstanceConfig, hooks...)
+}
+
+// Create returns a builder for creating a InstanceConfig entity.
+func (c *InstanceConfigClient) Create() *InstanceConfigCreate {
+	mutation := newInstanceConfigMutation(c.config, OpCreate)
+	return &InstanceConfigCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of InstanceConfig entities.
+func (c *InstanceConfigClient) CreateBulk(builders ...*InstanceConfigCreate) *InstanceConfigCreateBulk {
+	return &InstanceConfigCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for InstanceConfig.
+func (c *InstanceConfigClient) Update() *InstanceConfigUpdate {
+	mutation := newInstanceConfigMutation(c.config, OpUpdate)
+	return &InstanceConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *InstanceConfigClient) UpdateOne(ic *InstanceConfig) *InstanceConfigUpdateOne {
+	mutation := newInstanceConfigMutation(c.config, OpUpdateOne, withInstanceConfig(ic))
+	return &InstanceConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *InstanceConfigClient) UpdateOneID(id uuid.UUID) *InstanceConfigUpdateOne {
+	mutation := newInstanceConfigMutation(c.config, OpUpdateOne, withInstanceConfigID(id))
+	return &InstanceConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for InstanceConfig.
+func (c *InstanceConfigClient) Delete() *InstanceConfigDelete {
+	mutation := newInstanceConfigMutation(c.config, OpDelete)
+	return &InstanceConfigDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *InstanceConfigClient) DeleteOne(ic *InstanceConfig) *InstanceConfigDeleteOne {
+	return c.DeleteOneID(ic.ID)
+}
+
+// DeleteOne returns a builder for deleting the given entity by its id.
+func (c *InstanceConfigClient) DeleteOneID(id uuid.UUID) *InstanceConfigDeleteOne {
+	builder := c.Delete().Where(instanceconfig.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &InstanceConfigDeleteOne{builder}
+}
+
+// Query returns a query builder for InstanceConfig.
+func (c *InstanceConfigClient) Query() *InstanceConfigQuery {
+	return &InstanceConfigQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a InstanceConfig entity by its id.
+func (c *InstanceConfigClient) Get(ctx context.Context, id uuid.UUID) (*InstanceConfig, error) {
+	return c.Query().Where(instanceconfig.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *InstanceConfigClient) GetX(ctx context.Context, id uuid.UUID) *InstanceConfig {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryInstance queries the instance edge of a InstanceConfig.
+func (c *InstanceConfigClient) QueryInstance(ic *InstanceConfig) *InstanceQuery {
+	query := &InstanceQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := ic.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(instanceconfig.Table, instanceconfig.FieldID, id),
+			sqlgraph.To(instance.Table, instance.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, instanceconfig.InstanceTable, instanceconfig.InstanceColumn),
+		)
+		fromV = sqlgraph.Neighbors(ic.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *InstanceConfigClient) Hooks() []Hook {
+	return c.hooks.InstanceConfig
 }
 
 // ParticipantClient is a client for the Participant schema.
@@ -459,7 +685,7 @@ func (c *ParticipantClient) QueryBosslist(pa *Participant) *BosslistQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(participant.Table, participant.FieldID, id),
 			sqlgraph.To(bosslist.Table, bosslist.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, participant.BosslistTable, participant.BosslistPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, participant.BosslistTable, participant.BosslistColumn),
 		)
 		fromV = sqlgraph.Neighbors(pa.driver.Dialect(), step)
 		return fromV, nil

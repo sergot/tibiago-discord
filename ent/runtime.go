@@ -8,6 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sergot/tibiago/ent/boss"
 	"github.com/sergot/tibiago/ent/bosslist"
+	"github.com/sergot/tibiago/ent/instance"
+	"github.com/sergot/tibiago/ent/instanceconfig"
 	"github.com/sergot/tibiago/ent/participant"
 	"github.com/sergot/tibiago/ent/schema"
 )
@@ -36,6 +38,18 @@ func init() {
 	bosslistDescID := bosslistFields[0].Descriptor()
 	// bosslist.DefaultID holds the default value on creation for the id field.
 	bosslist.DefaultID = bosslistDescID.Default.(func() uuid.UUID)
+	instanceFields := schema.Instance{}.Fields()
+	_ = instanceFields
+	// instanceDescID is the schema descriptor for id field.
+	instanceDescID := instanceFields[0].Descriptor()
+	// instance.DefaultID holds the default value on creation for the id field.
+	instance.DefaultID = instanceDescID.Default.(func() uuid.UUID)
+	instanceconfigFields := schema.InstanceConfig{}.Fields()
+	_ = instanceconfigFields
+	// instanceconfigDescID is the schema descriptor for id field.
+	instanceconfigDescID := instanceconfigFields[0].Descriptor()
+	// instanceconfig.DefaultID holds the default value on creation for the id field.
+	instanceconfig.DefaultID = instanceconfigDescID.Default.(func() uuid.UUID)
 	participantFields := schema.Participant{}.Fields()
 	_ = participantFields
 	// participantDescID is the schema descriptor for id field.
