@@ -23,7 +23,7 @@ logs-bot:
 		docker-compose logs --tail=100 -f bot
 ps:
 		docker-compose ps
-login-bot:
+ssh-bot:
 		docker-compose exec bot /bin/bash
 generate:
 		go generate ./...
