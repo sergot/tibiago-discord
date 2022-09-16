@@ -3,13 +3,10 @@ module github.com/sergot/tibiago
 go 1.19
 
 require gopkg.in/yaml.v3 v3.0.1
-
 require github.com/mozillazg/go-unidecode v0.2.0
-
-require (
-	entgo.io/ent v0.11.2
-	github.com/mattn/go-shellwords v1.0.12
-)
+require github.com/google/uuid v1.3.0
+require github.com/spf13/cobra v1.5.0
+require github.com/mattn/go-shellwords v1.0.12
 
 require (
 	ariga.io/atlas v0.5.1-0.20220717122844-8593d7eb1a8e // indirect
@@ -36,8 +33,9 @@ require (
 )
 
 require (
-	github.com/google/uuid v1.3.0
-	github.com/spf13/cobra v1.5.0
+    entgo.io/ent v0.11.2
+	github.com/hedwigz/entviz v0.0.0-20220529060928-44574cfd7a21
+	golang.org/x/tools v0.1.13-0.20220804200503-81c7dc4e4efa // indirect
 )
 
 require (
