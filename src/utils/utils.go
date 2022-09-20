@@ -178,16 +178,16 @@ func MapConfigToDBConfig(config *models.Config) []*ent.InstanceConfig {
 
 func MapDBConfigToConfig(configs []*ent.InstanceConfig) *models.Config {
 	result := &models.Config{}
+	result.Bot.VocationEmojis = make(map[string]string)
 
 	for _, c := range configs {
-		switch c.Key {
-		case "bot.cmdprefix":
+		switch {
+		case c.Key == "bot.cmdprefix":
 			result.Bot.CmdPrefix = c.Value
-		case "bot.vocationemojis":
-			result.Bot.VocationEmojis = map[string]string{}
-		default:
+		case strings.HasPrefix(c.Key, "bot.vocationemojis."):
 			if strings.HasPrefix(c.Key, "bot.vocationemojis.") {
 				voc := strings.TrimPrefix(c.Key, "bot.vocationemojis.")
+				fmt.Println(voc)
 				result.Bot.VocationEmojis[voc] = c.Value
 			}
 		}

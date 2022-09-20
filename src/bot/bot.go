@@ -7,18 +7,10 @@ import (
 	"os/signal"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/sergot/tibiago/src/models"
 )
-
-var defaultConfig *models.Config
 
 func Connect(db string) {
 	var err error
-	defaultConfig, err = LoadConfig("default_config.yaml")
-	if err != nil {
-		log.Fatalln(err)
-		return
-	}
 
 	token := os.Getenv("BOT_TOKEN")
 	s, err := discordgo.New("Bot " + token)
