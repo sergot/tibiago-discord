@@ -2,11 +2,11 @@
 package factory
 
 import (
+	"github.com/sergot/tibiago/ent"
+
 	"github.com/google/uuid"
 
 	"time"
-
-	"github.com/sergot/tibiago/ent"
 
 	"context"
 )

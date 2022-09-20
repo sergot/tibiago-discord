@@ -6,12 +6,56 @@ import (
 	"log"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/sergot/tibiago/ent"
 	"github.com/sergot/tibiago/ent/bosslist"
 	"github.com/sergot/tibiago/ent/instance"
 	"github.com/sergot/tibiago/ent/participant"
 	"github.com/sergot/tibiago/src/models"
 	"github.com/sergot/tibiago/src/utils"
 )
+
+func initGuild(client *ent.Client, guildID string) error {
+	instance, _ := client.Instance.
+		Query().
+		Where(instance.DiscordGuildID(guildID)).
+		WithConfigs().
+		Only(context.Background())
+
+	if instance == nil {
+		log.Println("Instance not found, initializing new one")
+
+		tmp := client.Instance.
+			Create().
+			SetDiscordGuildID(guildID)
+
+		instance = tmp.SaveX(context.Background())
+
+		defaultConfig, err := LoadConfig("default_config.yaml")
+		if err != nil {
+			return err
+		}
+		configs := utils.MapConfigToDBConfig(defaultConfig)
+		bulk := make([]*ent.InstanceConfigCreate, len(configs))
+		for i, c := range configs {
+			bulk[i] = client.InstanceConfig.Create().
+				SetInstance(instance).
+				SetKey(c.Key).
+				SetValue(c.Value)
+		}
+
+		_, err = client.InstanceConfig.CreateBulk(bulk...).Save(context.Background())
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Println("Making the instance active")
+	instance.Update().
+		SetStatus("active").
+		SaveX(context.Background())
+
+	return nil
+}
 
 func GuildCreateHandler(db string) func(s *discordgo.Session, e *discordgo.GuildCreate) {
 	return func(_ *discordgo.Session, e *discordgo.GuildCreate) {
@@ -20,35 +64,10 @@ func GuildCreateHandler(db string) func(s *discordgo.Session, e *discordgo.Guild
 			log.Println(err)
 		}
 
-		instance := client.Instance.
-			Query().
-			Where(instance.DiscordGuildID(e.Guild.ID)).
-			WithConfigs().
-			OnlyX(context.Background())
-
-		if instance == nil {
-			log.Println("Instance not found, initializing new one")
-
-			defaultConfig, err = LoadConfig("default_config.yaml")
-			if err != nil {
-				log.Println(err)
-			}
-			configLines := utils.MapConfigToDBConfig(defaultConfig)
-
-			tmp := client.Instance.
-				Create().
-				SetDiscordGuildID(e.Guild.ID)
-
-			for _, line := range configLines {
-				tmp.AddConfigs(line)
-			}
-
-			instance = tmp.SaveX(context.Background())
+		err = initGuild(client, e.ID)
+		if err != nil {
+			log.Println(err)
 		}
-
-		instance.Update().
-			SetStatus("active").
-			SaveX(context.Background())
 
 		fmt.Println("Joined new guild")
 		fmt.Println(e.Guild.Name)

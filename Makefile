@@ -27,6 +27,7 @@ ssh-bot:
 		docker-compose exec bot /bin/bash
 generate:
 		go generate ./...
+		go run -mod=mod github.com/Yiling-J/carrier/cmd generate
 db-shell:
 		docker-compose exec db psql postgres://local-dev@db/tibiago?sslmode=disable
 db-migrate:

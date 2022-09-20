@@ -27,6 +27,14 @@ func (ic *InstanceCreate) SetStatus(i instance.Status) *InstanceCreate {
 	return ic
 }
 
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (ic *InstanceCreate) SetNillableStatus(i *instance.Status) *InstanceCreate {
+	if i != nil {
+		ic.SetStatus(*i)
+	}
+	return ic
+}
+
 // SetDiscordGuildID sets the "discord_guild_id" field.
 func (ic *InstanceCreate) SetDiscordGuildID(s string) *InstanceCreate {
 	ic.mutation.SetDiscordGuildID(s)
@@ -139,6 +147,10 @@ func (ic *InstanceCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ic *InstanceCreate) defaults() {
+	if _, ok := ic.mutation.Status(); !ok {
+		v := instance.DefaultStatus
+		ic.mutation.SetStatus(v)
+	}
 	if _, ok := ic.mutation.ID(); !ok {
 		v := instance.DefaultID()
 		ic.mutation.SetID(v)

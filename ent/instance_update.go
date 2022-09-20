@@ -35,6 +35,14 @@ func (iu *InstanceUpdate) SetStatus(i instance.Status) *InstanceUpdate {
 	return iu
 }
 
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (iu *InstanceUpdate) SetNillableStatus(i *instance.Status) *InstanceUpdate {
+	if i != nil {
+		iu.SetStatus(*i)
+	}
+	return iu
+}
+
 // SetDiscordGuildID sets the "discord_guild_id" field.
 func (iu *InstanceUpdate) SetDiscordGuildID(s string) *InstanceUpdate {
 	iu.mutation.SetDiscordGuildID(s)
@@ -260,6 +268,14 @@ type InstanceUpdateOne struct {
 // SetStatus sets the "status" field.
 func (iuo *InstanceUpdateOne) SetStatus(i instance.Status) *InstanceUpdateOne {
 	iuo.mutation.SetStatus(i)
+	return iuo
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (iuo *InstanceUpdateOne) SetNillableStatus(i *instance.Status) *InstanceUpdateOne {
+	if i != nil {
+		iuo.SetStatus(*i)
+	}
 	return iuo
 }
 

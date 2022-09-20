@@ -55,6 +55,9 @@ var (
 // Status defines the type for the "status" enum field.
 type Status string
 
+// StatusInactive is the default value of the Status enum.
+const DefaultStatus = StatusInactive
+
 // Status values.
 const (
 	StatusActive   Status = "active"

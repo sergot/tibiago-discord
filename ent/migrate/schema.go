@@ -46,7 +46,7 @@ var (
 	// InstancesColumns holds the columns for the "instances" table.
 	InstancesColumns = []*schema.Column{
 		{Name: "uuid", Type: field.TypeUUID},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive"}},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive"}, Default: "inactive"},
 		{Name: "discord_guild_id", Type: field.TypeString},
 	}
 	// InstancesTable holds the schema information for the "instances" table.

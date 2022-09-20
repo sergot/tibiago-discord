@@ -20,7 +20,8 @@ func (Instance) Fields() []ent.Field {
 			StorageKey("uuid"),
 
 		field.Enum("status").
-			Values("active", "inactive"), // TODO: more statuses
+			Values("active", "inactive"). // TODO: more statuses
+			Default("inactive"),
 
 		field.String("discord_guild_id"),
 	}
