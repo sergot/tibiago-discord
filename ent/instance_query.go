@@ -20,13 +20,13 @@ import (
 // InstanceQuery is the builder for querying Instance entities.
 type InstanceQuery struct {
 	config
-	limit      *int
-	offset     *int
-	unique     *bool
-	order      []OrderFunc
-	fields     []string
-	predicates []predicate.Instance
-	withConfig *InstanceConfigQuery
+	limit       *int
+	offset      *int
+	unique      *bool
+	order       []OrderFunc
+	fields      []string
+	predicates  []predicate.Instance
+	withConfigs *InstanceConfigQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -63,8 +63,8 @@ func (iq *InstanceQuery) Order(o ...OrderFunc) *InstanceQuery {
 	return iq
 }
 
-// QueryConfig chains the current query on the "config" edge.
-func (iq *InstanceQuery) QueryConfig() *InstanceConfigQuery {
+// QueryConfigs chains the current query on the "configs" edge.
+func (iq *InstanceQuery) QueryConfigs() *InstanceConfigQuery {
 	query := &InstanceConfigQuery{config: iq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := iq.prepareQuery(ctx); err != nil {
@@ -77,7 +77,7 @@ func (iq *InstanceQuery) QueryConfig() *InstanceConfigQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(instance.Table, instance.FieldID, selector),
 			sqlgraph.To(instanceconfig.Table, instanceconfig.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, instance.ConfigTable, instance.ConfigColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, instance.ConfigsTable, instance.ConfigsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(iq.driver.Dialect(), step)
 		return fromU, nil
@@ -261,12 +261,12 @@ func (iq *InstanceQuery) Clone() *InstanceQuery {
 		return nil
 	}
 	return &InstanceQuery{
-		config:     iq.config,
-		limit:      iq.limit,
-		offset:     iq.offset,
-		order:      append([]OrderFunc{}, iq.order...),
-		predicates: append([]predicate.Instance{}, iq.predicates...),
-		withConfig: iq.withConfig.Clone(),
+		config:      iq.config,
+		limit:       iq.limit,
+		offset:      iq.offset,
+		order:       append([]OrderFunc{}, iq.order...),
+		predicates:  append([]predicate.Instance{}, iq.predicates...),
+		withConfigs: iq.withConfigs.Clone(),
 		// clone intermediate query.
 		sql:    iq.sql.Clone(),
 		path:   iq.path,
@@ -274,14 +274,14 @@ func (iq *InstanceQuery) Clone() *InstanceQuery {
 	}
 }
 
-// WithConfig tells the query-builder to eager-load the nodes that are connected to
-// the "config" edge. The optional arguments are used to configure the query builder of the edge.
-func (iq *InstanceQuery) WithConfig(opts ...func(*InstanceConfigQuery)) *InstanceQuery {
+// WithConfigs tells the query-builder to eager-load the nodes that are connected to
+// the "configs" edge. The optional arguments are used to configure the query builder of the edge.
+func (iq *InstanceQuery) WithConfigs(opts ...func(*InstanceConfigQuery)) *InstanceQuery {
 	query := &InstanceConfigQuery{config: iq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	iq.withConfig = query
+	iq.withConfigs = query
 	return iq
 }
 
@@ -291,12 +291,12 @@ func (iq *InstanceQuery) WithConfig(opts ...func(*InstanceConfigQuery)) *Instanc
 // Example:
 //
 //	var v []struct {
-//		SessionID string `json:"session_id,omitempty"`
+//		Status instance.Status `json:"status,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Instance.Query().
-//		GroupBy(instance.FieldSessionID).
+//		GroupBy(instance.FieldStatus).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (iq *InstanceQuery) GroupBy(field string, fields ...string) *InstanceGroupBy {
@@ -319,11 +319,11 @@ func (iq *InstanceQuery) GroupBy(field string, fields ...string) *InstanceGroupB
 // Example:
 //
 //	var v []struct {
-//		SessionID string `json:"session_id,omitempty"`
+//		Status instance.Status `json:"status,omitempty"`
 //	}
 //
 //	client.Instance.Query().
-//		Select(instance.FieldSessionID).
+//		Select(instance.FieldStatus).
 //		Scan(ctx, &v)
 func (iq *InstanceQuery) Select(fields ...string) *InstanceSelect {
 	iq.fields = append(iq.fields, fields...)
@@ -354,7 +354,7 @@ func (iq *InstanceQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ins
 		nodes       = []*Instance{}
 		_spec       = iq.querySpec()
 		loadedTypes = [1]bool{
-			iq.withConfig != nil,
+			iq.withConfigs != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -375,17 +375,17 @@ func (iq *InstanceQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ins
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := iq.withConfig; query != nil {
-		if err := iq.loadConfig(ctx, query, nodes,
-			func(n *Instance) { n.Edges.Config = []*InstanceConfig{} },
-			func(n *Instance, e *InstanceConfig) { n.Edges.Config = append(n.Edges.Config, e) }); err != nil {
+	if query := iq.withConfigs; query != nil {
+		if err := iq.loadConfigs(ctx, query, nodes,
+			func(n *Instance) { n.Edges.Configs = []*InstanceConfig{} },
+			func(n *Instance, e *InstanceConfig) { n.Edges.Configs = append(n.Edges.Configs, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (iq *InstanceQuery) loadConfig(ctx context.Context, query *InstanceConfigQuery, nodes []*Instance, init func(*Instance), assign func(*Instance, *InstanceConfig)) error {
+func (iq *InstanceQuery) loadConfigs(ctx context.Context, query *InstanceConfigQuery, nodes []*Instance, init func(*Instance), assign func(*Instance, *InstanceConfig)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*Instance)
 	for i := range nodes {
@@ -397,20 +397,20 @@ func (iq *InstanceQuery) loadConfig(ctx context.Context, query *InstanceConfigQu
 	}
 	query.withFKs = true
 	query.Where(predicate.InstanceConfig(func(s *sql.Selector) {
-		s.Where(sql.InValues(instance.ConfigColumn, fks...))
+		s.Where(sql.InValues(instance.ConfigsColumn, fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.instance_config
+		fk := n.instance_configs
 		if fk == nil {
-			return fmt.Errorf(`foreign-key "instance_config" is nil for node %v`, n.ID)
+			return fmt.Errorf(`foreign-key "instance_configs" is nil for node %v`, n.ID)
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "instance_config" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "instance_configs" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -2,9 +2,9 @@
 package factory
 
 import (
-	"github.com/google/uuid"
-
 	"github.com/sergot/tibiago/ent"
+
+	"github.com/google/uuid"
 
 	"context"
 )

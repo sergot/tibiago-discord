@@ -12,6 +12,10 @@ import (
 )
 
 type EntParticipantMutator struct {
+	Bosslist *ent.Bosslist
+
+	BosslistID uuid.UUID
+
 	DiscordID string
 
 	ID uuid.UUID
@@ -26,6 +30,12 @@ func (m *EntParticipantMutator) EntCreator() *ent.ParticipantCreate {
 }
 
 type entParticipantMutation struct {
+	bosslistType int
+	bosslistFunc func(ctx context.Context, i *EntParticipantMutator, c int) error
+
+	bosslistIDType int
+	bosslistIDFunc func(ctx context.Context, i *EntParticipantMutator, c int) error
+
 	discordIDType int
 	discordIDFunc func(ctx context.Context, i *EntParticipantMutator, c int) error
 
@@ -58,6 +68,244 @@ func (*entParticipantMutation) afterCreateMutateFunc(fn func(ctx context.Context
 	return func(m *entParticipantMutation) {
 		m.afterCreateFunc = fn
 	}
+}
+
+func (*entParticipantMutation) bosslistSequenceMutateFunc(fn func(ctx context.Context, i int) (*ent.Bosslist, error)) func(m *entParticipantMutation) {
+	return func(m *entParticipantMutation) {
+		m.bosslistType = TypeSequence
+		m.bosslistFunc = func(ctx context.Context, i *EntParticipantMutator, c int) error {
+			if fn == nil {
+				return nil
+			}
+			value, err := fn(ctx, c)
+			if err != nil {
+				return err
+			}
+
+			i.EntCreator().SetBosslist(value)
+
+			i.Bosslist = value
+			return nil
+		}
+	}
+}
+func (*entParticipantMutation) bosslistLazyMutateFunc(fn func(ctx context.Context, i *EntParticipantMutator) (*ent.Bosslist, error)) func(m *entParticipantMutation) {
+	return func(m *entParticipantMutation) {
+		m.bosslistType = TypeLazy
+		m.bosslistFunc = func(ctx context.Context, i *EntParticipantMutator, c int) error {
+			if fn == nil {
+				return nil
+			}
+			value, err := fn(ctx, i)
+			if err != nil {
+				return err
+			}
+
+			i.EntCreator().SetBosslist(value)
+
+			i.Bosslist = value
+			return nil
+		}
+	}
+}
+func (*entParticipantMutation) bosslistDefaultMutateFunc(v *ent.Bosslist) func(m *entParticipantMutation) {
+	return func(m *entParticipantMutation) {
+		m.bosslistType = TypeDefault
+		m.bosslistFunc = func(ctx context.Context, i *EntParticipantMutator, c int) error {
+
+			i.EntCreator().SetBosslist(v)
+
+			i.Bosslist = v
+			return nil
+		}
+	}
+}
+func (*entParticipantMutation) bosslistFactoryMutateFunc(fn func(ctx context.Context) (*ent.Bosslist, error)) func(m *entParticipantMutation) {
+	return func(m *entParticipantMutation) {
+		m.bosslistType = TypeFactory
+		m.bosslistFunc = func(ctx context.Context, i *EntParticipantMutator, c int) error {
+			if fn == nil {
+				return nil
+			}
+			value, err := fn(ctx)
+			if err != nil {
+				return err
+			}
+
+			i.EntCreator().SetBosslist(value)
+
+			i.Bosslist = value
+
+			return nil
+		}
+	}
+}
+
+// SetBosslistSequence register a function which accept a sequence counter and set return value to Bosslist field
+func (f *EntParticipantMetaFactory) SetBosslistSequence(fn func(ctx context.Context, i int) (*ent.Bosslist, error)) *EntParticipantMetaFactory {
+	f.mutation.bosslistSequenceMutateFunc(fn)(&f.mutation)
+	return f
+}
+
+// SetBosslistLazy register a function which accept the build struct and set return value to Bosslist field
+func (f *EntParticipantMetaFactory) SetBosslistLazy(fn func(ctx context.Context, i *EntParticipantMutator) (*ent.Bosslist, error)) *EntParticipantMetaFactory {
+	f.mutation.bosslistLazyMutateFunc(fn)(&f.mutation)
+	return f
+}
+
+// SetBosslistDefault assign a default value to Bosslist field
+func (f *EntParticipantMetaFactory) SetBosslistDefault(v *ent.Bosslist) *EntParticipantMetaFactory {
+	f.mutation.bosslistDefaultMutateFunc(v)(&f.mutation)
+	return f
+}
+
+// SetBosslistFactory register a factory function and assign return value to Bosslist, you can also use related factory's Create/CreateV as input function here
+func (f *EntParticipantMetaFactory) SetBosslistFactory(fn func(ctx context.Context) (*ent.Bosslist, error)) *EntParticipantMetaFactory {
+	f.mutation.bosslistFactoryMutateFunc(fn)(&f.mutation)
+	return f
+}
+
+// SetBosslistSequence register a function which accept a sequence counter and set return value to Bosslist field
+func (t *entParticipantTrait) SetBosslistSequence(fn func(ctx context.Context, i int) (*ent.Bosslist, error)) *entParticipantTrait {
+	t.updates = append(t.updates, t.mutation.bosslistSequenceMutateFunc(fn))
+	return t
+}
+
+// SetBosslistLazy register a function which accept the build struct and set return value to Bosslist field
+func (t *entParticipantTrait) SetBosslistLazy(fn func(ctx context.Context, i *EntParticipantMutator) (*ent.Bosslist, error)) *entParticipantTrait {
+	t.updates = append(t.updates, t.mutation.bosslistLazyMutateFunc(fn))
+	return t
+}
+
+// SetBosslistDefault assign a default value to Bosslist field
+func (t *entParticipantTrait) SetBosslistDefault(v *ent.Bosslist) *entParticipantTrait {
+	t.updates = append(t.updates, t.mutation.bosslistDefaultMutateFunc(v))
+	return t
+}
+
+// SetBosslistFactory register a factory function and assign return value to Bosslist, you can also use related factory's Create/CreateV as input function here
+func (t *entParticipantTrait) SetBosslistFactory(fn func(ctx context.Context) (*ent.Bosslist, error)) *entParticipantTrait {
+	t.updates = append(t.updates, t.mutation.bosslistFactoryMutateFunc(fn))
+	return t
+}
+
+func (*entParticipantMutation) bosslistIDSequenceMutateFunc(fn func(ctx context.Context, i int) (uuid.UUID, error)) func(m *entParticipantMutation) {
+	return func(m *entParticipantMutation) {
+		m.bosslistIDType = TypeSequence
+		m.bosslistIDFunc = func(ctx context.Context, i *EntParticipantMutator, c int) error {
+			if fn == nil {
+				return nil
+			}
+			value, err := fn(ctx, c)
+			if err != nil {
+				return err
+			}
+
+			i.EntCreator().SetBosslistID(value)
+
+			i.BosslistID = value
+			return nil
+		}
+	}
+}
+func (*entParticipantMutation) bosslistIDLazyMutateFunc(fn func(ctx context.Context, i *EntParticipantMutator) (uuid.UUID, error)) func(m *entParticipantMutation) {
+	return func(m *entParticipantMutation) {
+		m.bosslistIDType = TypeLazy
+		m.bosslistIDFunc = func(ctx context.Context, i *EntParticipantMutator, c int) error {
+			if fn == nil {
+				return nil
+			}
+			value, err := fn(ctx, i)
+			if err != nil {
+				return err
+			}
+
+			i.EntCreator().SetBosslistID(value)
+
+			i.BosslistID = value
+			return nil
+		}
+	}
+}
+func (*entParticipantMutation) bosslistIDDefaultMutateFunc(v uuid.UUID) func(m *entParticipantMutation) {
+	return func(m *entParticipantMutation) {
+		m.bosslistIDType = TypeDefault
+		m.bosslistIDFunc = func(ctx context.Context, i *EntParticipantMutator, c int) error {
+
+			i.EntCreator().SetBosslistID(v)
+
+			i.BosslistID = v
+			return nil
+		}
+	}
+}
+func (*entParticipantMutation) bosslistIDFactoryMutateFunc(fn func(ctx context.Context) (uuid.UUID, error)) func(m *entParticipantMutation) {
+	return func(m *entParticipantMutation) {
+		m.bosslistIDType = TypeFactory
+		m.bosslistIDFunc = func(ctx context.Context, i *EntParticipantMutator, c int) error {
+			if fn == nil {
+				return nil
+			}
+			value, err := fn(ctx)
+			if err != nil {
+				return err
+			}
+
+			i.EntCreator().SetBosslistID(value)
+
+			i.BosslistID = value
+
+			return nil
+		}
+	}
+}
+
+// SetBosslistIDSequence register a function which accept a sequence counter and set return value to BosslistID field
+func (f *EntParticipantMetaFactory) SetBosslistIDSequence(fn func(ctx context.Context, i int) (uuid.UUID, error)) *EntParticipantMetaFactory {
+	f.mutation.bosslistIDSequenceMutateFunc(fn)(&f.mutation)
+	return f
+}
+
+// SetBosslistIDLazy register a function which accept the build struct and set return value to BosslistID field
+func (f *EntParticipantMetaFactory) SetBosslistIDLazy(fn func(ctx context.Context, i *EntParticipantMutator) (uuid.UUID, error)) *EntParticipantMetaFactory {
+	f.mutation.bosslistIDLazyMutateFunc(fn)(&f.mutation)
+	return f
+}
+
+// SetBosslistIDDefault assign a default value to BosslistID field
+func (f *EntParticipantMetaFactory) SetBosslistIDDefault(v uuid.UUID) *EntParticipantMetaFactory {
+	f.mutation.bosslistIDDefaultMutateFunc(v)(&f.mutation)
+	return f
+}
+
+// SetBosslistIDFactory register a factory function and assign return value to BosslistID, you can also use related factory's Create/CreateV as input function here
+func (f *EntParticipantMetaFactory) SetBosslistIDFactory(fn func(ctx context.Context) (uuid.UUID, error)) *EntParticipantMetaFactory {
+	f.mutation.bosslistIDFactoryMutateFunc(fn)(&f.mutation)
+	return f
+}
+
+// SetBosslistIDSequence register a function which accept a sequence counter and set return value to BosslistID field
+func (t *entParticipantTrait) SetBosslistIDSequence(fn func(ctx context.Context, i int) (uuid.UUID, error)) *entParticipantTrait {
+	t.updates = append(t.updates, t.mutation.bosslistIDSequenceMutateFunc(fn))
+	return t
+}
+
+// SetBosslistIDLazy register a function which accept the build struct and set return value to BosslistID field
+func (t *entParticipantTrait) SetBosslistIDLazy(fn func(ctx context.Context, i *EntParticipantMutator) (uuid.UUID, error)) *entParticipantTrait {
+	t.updates = append(t.updates, t.mutation.bosslistIDLazyMutateFunc(fn))
+	return t
+}
+
+// SetBosslistIDDefault assign a default value to BosslistID field
+func (t *entParticipantTrait) SetBosslistIDDefault(v uuid.UUID) *entParticipantTrait {
+	t.updates = append(t.updates, t.mutation.bosslistIDDefaultMutateFunc(v))
+	return t
+}
+
+// SetBosslistIDFactory register a factory function and assign return value to BosslistID, you can also use related factory's Create/CreateV as input function here
+func (t *entParticipantTrait) SetBosslistIDFactory(fn func(ctx context.Context) (uuid.UUID, error)) *entParticipantTrait {
+	t.updates = append(t.updates, t.mutation.bosslistIDFactoryMutateFunc(fn))
+	return t
 }
 
 func (*entParticipantMutation) discordIDSequenceMutateFunc(fn func(ctx context.Context, i int) (string, error)) func(m *entParticipantMutation) {
@@ -453,6 +701,26 @@ type EntParticipantFactory struct {
 	client *ent.Client
 }
 
+// SetBosslist set the Bosslist field
+func (f *EntParticipantFactory) SetBosslist(i *ent.Bosslist) *EntParticipantBuilder {
+	builder := &EntParticipantBuilder{mutation: f.meta.mutation, counter: f.counter, factory: f}
+	builder.SetBosslist(i)
+
+	builder.client = f.client
+
+	return builder
+}
+
+// SetBosslistID set the BosslistID field
+func (f *EntParticipantFactory) SetBosslistID(i uuid.UUID) *EntParticipantBuilder {
+	builder := &EntParticipantBuilder{mutation: f.meta.mutation, counter: f.counter, factory: f}
+	builder.SetBosslistID(i)
+
+	builder.client = f.client
+
+	return builder
+}
+
 // SetDiscordID set the DiscordID field
 func (f *EntParticipantFactory) SetDiscordID(i string) *EntParticipantBuilder {
 	builder := &EntParticipantBuilder{mutation: f.meta.mutation, counter: f.counter, factory: f}
@@ -530,6 +798,12 @@ type EntParticipantBuilder struct {
 	mutation entParticipantMutation
 	counter  *Counter
 
+	bosslistOverride  *ent.Bosslist
+	bosslistOverriden bool
+
+	bosslistIDOverride  uuid.UUID
+	bosslistIDOverriden bool
+
 	discordIDOverride  string
 	discordIDOverriden bool
 
@@ -544,6 +818,20 @@ type EntParticipantBuilder struct {
 
 func (b *EntParticipantBuilder) Client(c *ent.Client) *EntParticipantBuilder {
 	b.client = c
+	return b
+}
+
+// SetBosslist set the Bosslist field
+func (b *EntParticipantBuilder) SetBosslist(i *ent.Bosslist) *EntParticipantBuilder {
+	b.bosslistOverride = i
+	b.bosslistOverriden = true
+	return b
+}
+
+// SetBosslistID set the BosslistID field
+func (b *EntParticipantBuilder) SetBosslistID(i uuid.UUID) *EntParticipantBuilder {
+	b.bosslistIDOverride = i
+	b.bosslistIDOverriden = true
 	return b
 }
 
@@ -590,6 +878,50 @@ func (b *EntParticipantBuilder) Create(ctx context.Context) (*ent.Participant, e
 
 	client := b.client
 	entBuilder := client.Participant.Create()
+
+	if b.bosslistOverriden {
+		preSlice = append(preSlice, func(ctx context.Context, i *EntParticipantMutator, c int) error {
+			value := b.bosslistOverride
+
+			i.EntCreator().SetBosslist(value)
+
+			i.Bosslist = value
+			return nil
+		})
+	} else {
+		switch b.mutation.bosslistType {
+		case TypeDefault:
+			preSlice = append(preSlice, b.mutation.bosslistFunc)
+		case TypeLazy:
+			lazySlice = append(lazySlice, b.mutation.bosslistFunc)
+		case TypeSequence:
+			preSlice = append(preSlice, b.mutation.bosslistFunc)
+		case TypeFactory:
+			preSlice = append(preSlice, b.mutation.bosslistFunc)
+		}
+	}
+
+	if b.bosslistIDOverriden {
+		preSlice = append(preSlice, func(ctx context.Context, i *EntParticipantMutator, c int) error {
+			value := b.bosslistIDOverride
+
+			i.EntCreator().SetBosslistID(value)
+
+			i.BosslistID = value
+			return nil
+		})
+	} else {
+		switch b.mutation.bosslistIDType {
+		case TypeDefault:
+			preSlice = append(preSlice, b.mutation.bosslistIDFunc)
+		case TypeLazy:
+			lazySlice = append(lazySlice, b.mutation.bosslistIDFunc)
+		case TypeSequence:
+			preSlice = append(preSlice, b.mutation.bosslistIDFunc)
+		case TypeFactory:
+			preSlice = append(preSlice, b.mutation.bosslistIDFunc)
+		}
+	}
 
 	if b.discordIDOverriden {
 		preSlice = append(preSlice, func(ctx context.Context, i *EntParticipantMutator, c int) error {

@@ -24,10 +24,12 @@ import (
 	"github.com/thoas/go-funk"
 )
 
-func ParseCmd(m *discordgo.MessageCreate, instance *models.Instance) (*models.Cmd, error) {
+func ParseCmd(m *discordgo.MessageCreate, instance *ent.Instance) (*models.Cmd, error) {
 	content := m.Message.Content
 
-	if !strings.HasPrefix(content, instance.Config.Bot.CmdPrefix) {
+	config := MapDBConfigToConfig(instance.QueryConfigs().AllX(context.Background()))
+
+	if !strings.HasPrefix(content, config.Bot.CmdPrefix) {
 		return nil, nil
 	}
 
@@ -35,7 +37,7 @@ func ParseCmd(m *discordgo.MessageCreate, instance *models.Instance) (*models.Cm
 
 	c := &models.Cmd{
 		MessageID: m.Message.ID,
-		Message:   strings.TrimSpace(strings.TrimPrefix(s, instance.Config.Bot.CmdPrefix)),
+		Message:   strings.TrimSpace(strings.TrimPrefix(s, config.Bot.CmdPrefix)),
 		ChannelID: strings.TrimSpace(m.ChannelID),
 		UserID:    m.Author.ID,
 	}
@@ -152,4 +154,44 @@ func GenerateBosslist(bosslist *ent.Bosslist) string {
 	}
 
 	return buf.String()
+}
+
+// TODO: think whether we can write it better. More dynamic?
+func MapConfigToDBConfig(config *models.Config) []*ent.InstanceConfig {
+
+	var result []*ent.InstanceConfig
+
+	result = append(result, &ent.InstanceConfig{
+		Key:   "bot.cmdprefix",
+		Value: config.Bot.CmdPrefix,
+	})
+
+	for k, v := range config.Bot.VocationEmojis {
+		result = append(result, &ent.InstanceConfig{
+			Key:   fmt.Sprintf("bot.vocationemojis.%s", k),
+			Value: v,
+		})
+	}
+
+	return result
+}
+
+func MapDBConfigToConfig(configs []*ent.InstanceConfig) *models.Config {
+	result := &models.Config{}
+
+	for _, c := range configs {
+		switch c.Key {
+		case "bot.cmdprefix":
+			result.Bot.CmdPrefix = c.Value
+		case "bot.vocationemojis":
+			result.Bot.VocationEmojis = map[string]string{}
+		default:
+			if strings.HasPrefix(c.Key, "bot.vocationemojis.") {
+				voc := strings.TrimPrefix(c.Key, "bot.vocationemojis.")
+				result.Bot.VocationEmojis[voc] = c.Value
+			}
+		}
+	}
+
+	return result
 }

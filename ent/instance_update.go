@@ -29,20 +29,26 @@ func (iu *InstanceUpdate) Where(ps ...predicate.Instance) *InstanceUpdate {
 	return iu
 }
 
-// SetSessionID sets the "session_id" field.
-func (iu *InstanceUpdate) SetSessionID(s string) *InstanceUpdate {
-	iu.mutation.SetSessionID(s)
+// SetStatus sets the "status" field.
+func (iu *InstanceUpdate) SetStatus(i instance.Status) *InstanceUpdate {
+	iu.mutation.SetStatus(i)
 	return iu
 }
 
-// AddConfigIDs adds the "config" edge to the InstanceConfig entity by IDs.
+// SetDiscordGuildID sets the "discord_guild_id" field.
+func (iu *InstanceUpdate) SetDiscordGuildID(s string) *InstanceUpdate {
+	iu.mutation.SetDiscordGuildID(s)
+	return iu
+}
+
+// AddConfigIDs adds the "configs" edge to the InstanceConfig entity by IDs.
 func (iu *InstanceUpdate) AddConfigIDs(ids ...uuid.UUID) *InstanceUpdate {
 	iu.mutation.AddConfigIDs(ids...)
 	return iu
 }
 
-// AddConfig adds the "config" edges to the InstanceConfig entity.
-func (iu *InstanceUpdate) AddConfig(i ...*InstanceConfig) *InstanceUpdate {
+// AddConfigs adds the "configs" edges to the InstanceConfig entity.
+func (iu *InstanceUpdate) AddConfigs(i ...*InstanceConfig) *InstanceUpdate {
 	ids := make([]uuid.UUID, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
@@ -55,20 +61,20 @@ func (iu *InstanceUpdate) Mutation() *InstanceMutation {
 	return iu.mutation
 }
 
-// ClearConfig clears all "config" edges to the InstanceConfig entity.
-func (iu *InstanceUpdate) ClearConfig() *InstanceUpdate {
-	iu.mutation.ClearConfig()
+// ClearConfigs clears all "configs" edges to the InstanceConfig entity.
+func (iu *InstanceUpdate) ClearConfigs() *InstanceUpdate {
+	iu.mutation.ClearConfigs()
 	return iu
 }
 
-// RemoveConfigIDs removes the "config" edge to InstanceConfig entities by IDs.
+// RemoveConfigIDs removes the "configs" edge to InstanceConfig entities by IDs.
 func (iu *InstanceUpdate) RemoveConfigIDs(ids ...uuid.UUID) *InstanceUpdate {
 	iu.mutation.RemoveConfigIDs(ids...)
 	return iu
 }
 
-// RemoveConfig removes "config" edges to InstanceConfig entities.
-func (iu *InstanceUpdate) RemoveConfig(i ...*InstanceConfig) *InstanceUpdate {
+// RemoveConfigs removes "configs" edges to InstanceConfig entities.
+func (iu *InstanceUpdate) RemoveConfigs(i ...*InstanceConfig) *InstanceUpdate {
 	ids := make([]uuid.UUID, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
@@ -83,12 +89,18 @@ func (iu *InstanceUpdate) Save(ctx context.Context) (int, error) {
 		affected int
 	)
 	if len(iu.hooks) == 0 {
+		if err = iu.check(); err != nil {
+			return 0, err
+		}
 		affected, err = iu.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*InstanceMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = iu.check(); err != nil {
+				return 0, err
 			}
 			iu.mutation = mutation
 			affected, err = iu.sqlSave(ctx)
@@ -130,6 +142,16 @@ func (iu *InstanceUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (iu *InstanceUpdate) check() error {
+	if v, ok := iu.mutation.Status(); ok {
+		if err := instance.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Instance.status": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (iu *InstanceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -148,19 +170,26 @@ func (iu *InstanceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := iu.mutation.SessionID(); ok {
+	if value, ok := iu.mutation.Status(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: instance.FieldStatus,
+		})
+	}
+	if value, ok := iu.mutation.DiscordGuildID(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
-			Column: instance.FieldSessionID,
+			Column: instance.FieldDiscordGuildID,
 		})
 	}
-	if iu.mutation.ConfigCleared() {
+	if iu.mutation.ConfigsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   instance.ConfigTable,
-			Columns: []string{instance.ConfigColumn},
+			Table:   instance.ConfigsTable,
+			Columns: []string{instance.ConfigsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -171,12 +200,12 @@ func (iu *InstanceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iu.mutation.RemovedConfigIDs(); len(nodes) > 0 && !iu.mutation.ConfigCleared() {
+	if nodes := iu.mutation.RemovedConfigsIDs(); len(nodes) > 0 && !iu.mutation.ConfigsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   instance.ConfigTable,
-			Columns: []string{instance.ConfigColumn},
+			Table:   instance.ConfigsTable,
+			Columns: []string{instance.ConfigsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -190,12 +219,12 @@ func (iu *InstanceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iu.mutation.ConfigIDs(); len(nodes) > 0 {
+	if nodes := iu.mutation.ConfigsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   instance.ConfigTable,
-			Columns: []string{instance.ConfigColumn},
+			Table:   instance.ConfigsTable,
+			Columns: []string{instance.ConfigsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -228,20 +257,26 @@ type InstanceUpdateOne struct {
 	mutation *InstanceMutation
 }
 
-// SetSessionID sets the "session_id" field.
-func (iuo *InstanceUpdateOne) SetSessionID(s string) *InstanceUpdateOne {
-	iuo.mutation.SetSessionID(s)
+// SetStatus sets the "status" field.
+func (iuo *InstanceUpdateOne) SetStatus(i instance.Status) *InstanceUpdateOne {
+	iuo.mutation.SetStatus(i)
 	return iuo
 }
 
-// AddConfigIDs adds the "config" edge to the InstanceConfig entity by IDs.
+// SetDiscordGuildID sets the "discord_guild_id" field.
+func (iuo *InstanceUpdateOne) SetDiscordGuildID(s string) *InstanceUpdateOne {
+	iuo.mutation.SetDiscordGuildID(s)
+	return iuo
+}
+
+// AddConfigIDs adds the "configs" edge to the InstanceConfig entity by IDs.
 func (iuo *InstanceUpdateOne) AddConfigIDs(ids ...uuid.UUID) *InstanceUpdateOne {
 	iuo.mutation.AddConfigIDs(ids...)
 	return iuo
 }
 
-// AddConfig adds the "config" edges to the InstanceConfig entity.
-func (iuo *InstanceUpdateOne) AddConfig(i ...*InstanceConfig) *InstanceUpdateOne {
+// AddConfigs adds the "configs" edges to the InstanceConfig entity.
+func (iuo *InstanceUpdateOne) AddConfigs(i ...*InstanceConfig) *InstanceUpdateOne {
 	ids := make([]uuid.UUID, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
@@ -254,20 +289,20 @@ func (iuo *InstanceUpdateOne) Mutation() *InstanceMutation {
 	return iuo.mutation
 }
 
-// ClearConfig clears all "config" edges to the InstanceConfig entity.
-func (iuo *InstanceUpdateOne) ClearConfig() *InstanceUpdateOne {
-	iuo.mutation.ClearConfig()
+// ClearConfigs clears all "configs" edges to the InstanceConfig entity.
+func (iuo *InstanceUpdateOne) ClearConfigs() *InstanceUpdateOne {
+	iuo.mutation.ClearConfigs()
 	return iuo
 }
 
-// RemoveConfigIDs removes the "config" edge to InstanceConfig entities by IDs.
+// RemoveConfigIDs removes the "configs" edge to InstanceConfig entities by IDs.
 func (iuo *InstanceUpdateOne) RemoveConfigIDs(ids ...uuid.UUID) *InstanceUpdateOne {
 	iuo.mutation.RemoveConfigIDs(ids...)
 	return iuo
 }
 
-// RemoveConfig removes "config" edges to InstanceConfig entities.
-func (iuo *InstanceUpdateOne) RemoveConfig(i ...*InstanceConfig) *InstanceUpdateOne {
+// RemoveConfigs removes "configs" edges to InstanceConfig entities.
+func (iuo *InstanceUpdateOne) RemoveConfigs(i ...*InstanceConfig) *InstanceUpdateOne {
 	ids := make([]uuid.UUID, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
@@ -289,12 +324,18 @@ func (iuo *InstanceUpdateOne) Save(ctx context.Context) (*Instance, error) {
 		node *Instance
 	)
 	if len(iuo.hooks) == 0 {
+		if err = iuo.check(); err != nil {
+			return nil, err
+		}
 		node, err = iuo.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*InstanceMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = iuo.check(); err != nil {
+				return nil, err
 			}
 			iuo.mutation = mutation
 			node, err = iuo.sqlSave(ctx)
@@ -342,6 +383,16 @@ func (iuo *InstanceUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (iuo *InstanceUpdateOne) check() error {
+	if v, ok := iuo.mutation.Status(); ok {
+		if err := instance.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Instance.status": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (iuo *InstanceUpdateOne) sqlSave(ctx context.Context) (_node *Instance, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -377,19 +428,26 @@ func (iuo *InstanceUpdateOne) sqlSave(ctx context.Context) (_node *Instance, err
 			}
 		}
 	}
-	if value, ok := iuo.mutation.SessionID(); ok {
+	if value, ok := iuo.mutation.Status(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: instance.FieldStatus,
+		})
+	}
+	if value, ok := iuo.mutation.DiscordGuildID(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
-			Column: instance.FieldSessionID,
+			Column: instance.FieldDiscordGuildID,
 		})
 	}
-	if iuo.mutation.ConfigCleared() {
+	if iuo.mutation.ConfigsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   instance.ConfigTable,
-			Columns: []string{instance.ConfigColumn},
+			Table:   instance.ConfigsTable,
+			Columns: []string{instance.ConfigsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -400,12 +458,12 @@ func (iuo *InstanceUpdateOne) sqlSave(ctx context.Context) (_node *Instance, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iuo.mutation.RemovedConfigIDs(); len(nodes) > 0 && !iuo.mutation.ConfigCleared() {
+	if nodes := iuo.mutation.RemovedConfigsIDs(); len(nodes) > 0 && !iuo.mutation.ConfigsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   instance.ConfigTable,
-			Columns: []string{instance.ConfigColumn},
+			Table:   instance.ConfigsTable,
+			Columns: []string{instance.ConfigsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -419,12 +477,12 @@ func (iuo *InstanceUpdateOne) sqlSave(ctx context.Context) (_node *Instance, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iuo.mutation.ConfigIDs(); len(nodes) > 0 {
+	if nodes := iuo.mutation.ConfigsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   instance.ConfigTable,
-			Columns: []string{instance.ConfigColumn},
+			Table:   instance.ConfigsTable,
+			Columns: []string{instance.ConfigsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

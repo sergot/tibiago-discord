@@ -11,7 +11,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sergot/tibiago/carrier"
 	"github.com/sergot/tibiago/ent"
-	"github.com/sergot/tibiago/src/models"
 	"github.com/sergot/tibiago/src/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -105,6 +104,8 @@ func initFactory() *carrier.EntFactory {
 	initBossFactory(factory)
 	initBosslistFactory(factory)
 	initParticipantFactory(factory)
+	initInstanceFactory(factory)
+	initInstanceConfigFactory(factory)
 	return factory
 }
 
@@ -128,16 +129,34 @@ func initParticipantFactory(f *carrier.EntFactory) {
 	f.SetParticipantFactory(meta.Build())
 }
 
+func initInstanceFactory(f *carrier.EntFactory) {
+	meta := carrier.EntInstanceMetaFactory().
+		SetDiscordGuildIDDefault("1").
+		SetStatusDefault("active")
+	f.SetInstanceFactory(meta.Build())
+}
+
+func initInstanceConfigFactory(f *carrier.EntFactory) {
+	meta := carrier.EntInstanceConfigMetaFactory()
+	f.SetInstanceConfigFactory(meta.Build())
+}
+
 func TestParseCmd(t *testing.T) {
-	instance := &models.Instance{
-		Config: &models.Config{
-			Bot: struct {
-				CmdPrefix      string
-				VocationEmojis map[string]string `yaml:"vocationEmojis"`
-			}{
-				CmdPrefix: "!",
-			},
-		},
+	factory := initFactory()
+
+	instance, err := factory.InstanceFactory().
+		Create(context.TODO())
+	if err != nil {
+		t.Fail()
+	}
+
+	_, err = factory.InstanceConfigFactory().
+		SetKey("bot.cmdprefix").
+		SetValue("!").
+		SetInstance(instance).
+		Create(context.TODO())
+	if err != nil {
+		t.Fail()
 	}
 
 	messageCreate := &discordgo.MessageCreate{

@@ -16,8 +16,10 @@ type Instance struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
-	// SessionID holds the value of the "session_id" field.
-	SessionID string `json:"session_id,omitempty"`
+	// Status holds the value of the "status" field.
+	Status instance.Status `json:"status,omitempty"`
+	// DiscordGuildID holds the value of the "discord_guild_id" field.
+	DiscordGuildID string `json:"discord_guild_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the InstanceQuery when eager-loading is set.
 	Edges InstanceEdges `json:"edges"`
@@ -25,20 +27,20 @@ type Instance struct {
 
 // InstanceEdges holds the relations/edges for other nodes in the graph.
 type InstanceEdges struct {
-	// Config holds the value of the config edge.
-	Config []*InstanceConfig `json:"config,omitempty"`
+	// Configs holds the value of the configs edge.
+	Configs []*InstanceConfig `json:"configs,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 }
 
-// ConfigOrErr returns the Config value or an error if the edge
+// ConfigsOrErr returns the Configs value or an error if the edge
 // was not loaded in eager-loading.
-func (e InstanceEdges) ConfigOrErr() ([]*InstanceConfig, error) {
+func (e InstanceEdges) ConfigsOrErr() ([]*InstanceConfig, error) {
 	if e.loadedTypes[0] {
-		return e.Config, nil
+		return e.Configs, nil
 	}
-	return nil, &NotLoadedError{edge: "config"}
+	return nil, &NotLoadedError{edge: "configs"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -46,7 +48,7 @@ func (*Instance) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case instance.FieldSessionID:
+		case instance.FieldStatus, instance.FieldDiscordGuildID:
 			values[i] = new(sql.NullString)
 		case instance.FieldID:
 			values[i] = new(uuid.UUID)
@@ -71,20 +73,26 @@ func (i *Instance) assignValues(columns []string, values []interface{}) error {
 			} else if value != nil {
 				i.ID = *value
 			}
-		case instance.FieldSessionID:
+		case instance.FieldStatus:
 			if value, ok := values[j].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field session_id", values[j])
+				return fmt.Errorf("unexpected type %T for field status", values[j])
 			} else if value.Valid {
-				i.SessionID = value.String
+				i.Status = instance.Status(value.String)
+			}
+		case instance.FieldDiscordGuildID:
+			if value, ok := values[j].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field discord_guild_id", values[j])
+			} else if value.Valid {
+				i.DiscordGuildID = value.String
 			}
 		}
 	}
 	return nil
 }
 
-// QueryConfig queries the "config" edge of the Instance entity.
-func (i *Instance) QueryConfig() *InstanceConfigQuery {
-	return (&InstanceClient{config: i.config}).QueryConfig(i)
+// QueryConfigs queries the "configs" edge of the Instance entity.
+func (i *Instance) QueryConfigs() *InstanceConfigQuery {
+	return (&InstanceClient{config: i.config}).QueryConfigs(i)
 }
 
 // Update returns a builder for updating this Instance.
@@ -110,8 +118,11 @@ func (i *Instance) String() string {
 	var builder strings.Builder
 	builder.WriteString("Instance(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", i.ID))
-	builder.WriteString("session_id=")
-	builder.WriteString(i.SessionID)
+	builder.WriteString("status=")
+	builder.WriteString(fmt.Sprintf("%v", i.Status))
+	builder.WriteString(", ")
+	builder.WriteString("discord_guild_id=")
+	builder.WriteString(i.DiscordGuildID)
 	builder.WriteByte(')')
 	return builder.String()
 }

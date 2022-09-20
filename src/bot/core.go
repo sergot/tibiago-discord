@@ -6,7 +6,7 @@ import (
 	"github.com/sergot/tibiago/src/models"
 )
 
-func New() *models.Bot {
+func NewBot() *models.Bot {
 	b := &models.Bot{}
 
 	b.Token = os.Getenv("BOT_TOKEN")

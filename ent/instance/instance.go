@@ -3,6 +3,8 @@
 package instance
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 )
 
@@ -11,25 +13,28 @@ const (
 	Label = "instance"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "uuid"
-	// FieldSessionID holds the string denoting the session_id field in the database.
-	FieldSessionID = "session_id"
-	// EdgeConfig holds the string denoting the config edge name in mutations.
-	EdgeConfig = "config"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
+	// FieldDiscordGuildID holds the string denoting the discord_guild_id field in the database.
+	FieldDiscordGuildID = "discord_guild_id"
+	// EdgeConfigs holds the string denoting the configs edge name in mutations.
+	EdgeConfigs = "configs"
 	// Table holds the table name of the instance in the database.
 	Table = "instances"
-	// ConfigTable is the table that holds the config relation/edge.
-	ConfigTable = "instance_configs"
-	// ConfigInverseTable is the table name for the InstanceConfig entity.
+	// ConfigsTable is the table that holds the configs relation/edge.
+	ConfigsTable = "instance_configs"
+	// ConfigsInverseTable is the table name for the InstanceConfig entity.
 	// It exists in this package in order to avoid circular dependency with the "instanceconfig" package.
-	ConfigInverseTable = "instance_configs"
-	// ConfigColumn is the table column denoting the config relation/edge.
-	ConfigColumn = "instance_config"
+	ConfigsInverseTable = "instance_configs"
+	// ConfigsColumn is the table column denoting the configs relation/edge.
+	ConfigsColumn = "instance_configs"
 )
 
 // Columns holds all SQL columns for instance fields.
 var Columns = []string{
 	FieldID,
-	FieldSessionID,
+	FieldStatus,
+	FieldDiscordGuildID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -46,3 +51,26 @@ var (
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
+
+// Status defines the type for the "status" enum field.
+type Status string
+
+// Status values.
+const (
+	StatusActive   Status = "active"
+	StatusInactive Status = "inactive"
+)
+
+func (s Status) String() string {
+	return string(s)
+}
+
+// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
+func StatusValidator(s Status) error {
+	switch s {
+	case StatusActive, StatusInactive:
+		return nil
+	default:
+		return fmt.Errorf("instance: invalid enum value for status field: %q", s)
+	}
+}

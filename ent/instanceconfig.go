@@ -23,8 +23,8 @@ type InstanceConfig struct {
 	Value string `json:"value,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the InstanceConfigQuery when eager-loading is set.
-	Edges           InstanceConfigEdges `json:"edges"`
-	instance_config *uuid.UUID
+	Edges            InstanceConfigEdges `json:"edges"`
+	instance_configs *uuid.UUID
 }
 
 // InstanceConfigEdges holds the relations/edges for other nodes in the graph.
@@ -58,7 +58,7 @@ func (*InstanceConfig) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullString)
 		case instanceconfig.FieldID:
 			values[i] = new(uuid.UUID)
-		case instanceconfig.ForeignKeys[0]: // instance_config
+		case instanceconfig.ForeignKeys[0]: // instance_configs
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type InstanceConfig", columns[i])
@@ -95,10 +95,10 @@ func (ic *InstanceConfig) assignValues(columns []string, values []interface{}) e
 			}
 		case instanceconfig.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field instance_config", values[i])
+				return fmt.Errorf("unexpected type %T for field instance_configs", values[i])
 			} else if value.Valid {
-				ic.instance_config = new(uuid.UUID)
-				*ic.instance_config = *value.S.(*uuid.UUID)
+				ic.instance_configs = new(uuid.UUID)
+				*ic.instance_configs = *value.S.(*uuid.UUID)
 			}
 		}
 	}

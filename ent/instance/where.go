@@ -80,131 +80,167 @@ func IDLTE(id uuid.UUID) predicate.Instance {
 	})
 }
 
-// SessionID applies equality check predicate on the "session_id" field. It's identical to SessionIDEQ.
-func SessionID(v string) predicate.Instance {
+// DiscordGuildID applies equality check predicate on the "discord_guild_id" field. It's identical to DiscordGuildIDEQ.
+func DiscordGuildID(v string) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldSessionID), v))
+		s.Where(sql.EQ(s.C(FieldDiscordGuildID), v))
 	})
 }
 
-// SessionIDEQ applies the EQ predicate on the "session_id" field.
-func SessionIDEQ(v string) predicate.Instance {
+// StatusEQ applies the EQ predicate on the "status" field.
+func StatusEQ(v Status) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldSessionID), v))
+		s.Where(sql.EQ(s.C(FieldStatus), v))
 	})
 }
 
-// SessionIDNEQ applies the NEQ predicate on the "session_id" field.
-func SessionIDNEQ(v string) predicate.Instance {
+// StatusNEQ applies the NEQ predicate on the "status" field.
+func StatusNEQ(v Status) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldSessionID), v))
+		s.Where(sql.NEQ(s.C(FieldStatus), v))
 	})
 }
 
-// SessionIDIn applies the In predicate on the "session_id" field.
-func SessionIDIn(vs ...string) predicate.Instance {
+// StatusIn applies the In predicate on the "status" field.
+func StatusIn(vs ...Status) predicate.Instance {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.Instance(func(s *sql.Selector) {
-		s.Where(sql.In(s.C(FieldSessionID), v...))
+		s.Where(sql.In(s.C(FieldStatus), v...))
 	})
 }
 
-// SessionIDNotIn applies the NotIn predicate on the "session_id" field.
-func SessionIDNotIn(vs ...string) predicate.Instance {
+// StatusNotIn applies the NotIn predicate on the "status" field.
+func StatusNotIn(vs ...Status) predicate.Instance {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
 	}
 	return predicate.Instance(func(s *sql.Selector) {
-		s.Where(sql.NotIn(s.C(FieldSessionID), v...))
+		s.Where(sql.NotIn(s.C(FieldStatus), v...))
 	})
 }
 
-// SessionIDGT applies the GT predicate on the "session_id" field.
-func SessionIDGT(v string) predicate.Instance {
+// DiscordGuildIDEQ applies the EQ predicate on the "discord_guild_id" field.
+func DiscordGuildIDEQ(v string) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldSessionID), v))
+		s.Where(sql.EQ(s.C(FieldDiscordGuildID), v))
 	})
 }
 
-// SessionIDGTE applies the GTE predicate on the "session_id" field.
-func SessionIDGTE(v string) predicate.Instance {
+// DiscordGuildIDNEQ applies the NEQ predicate on the "discord_guild_id" field.
+func DiscordGuildIDNEQ(v string) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldSessionID), v))
+		s.Where(sql.NEQ(s.C(FieldDiscordGuildID), v))
 	})
 }
 
-// SessionIDLT applies the LT predicate on the "session_id" field.
-func SessionIDLT(v string) predicate.Instance {
+// DiscordGuildIDIn applies the In predicate on the "discord_guild_id" field.
+func DiscordGuildIDIn(vs ...string) predicate.Instance {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
 	return predicate.Instance(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldSessionID), v))
+		s.Where(sql.In(s.C(FieldDiscordGuildID), v...))
 	})
 }
 
-// SessionIDLTE applies the LTE predicate on the "session_id" field.
-func SessionIDLTE(v string) predicate.Instance {
+// DiscordGuildIDNotIn applies the NotIn predicate on the "discord_guild_id" field.
+func DiscordGuildIDNotIn(vs ...string) predicate.Instance {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
 	return predicate.Instance(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldSessionID), v))
+		s.Where(sql.NotIn(s.C(FieldDiscordGuildID), v...))
 	})
 }
 
-// SessionIDContains applies the Contains predicate on the "session_id" field.
-func SessionIDContains(v string) predicate.Instance {
+// DiscordGuildIDGT applies the GT predicate on the "discord_guild_id" field.
+func DiscordGuildIDGT(v string) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
-		s.Where(sql.Contains(s.C(FieldSessionID), v))
+		s.Where(sql.GT(s.C(FieldDiscordGuildID), v))
 	})
 }
 
-// SessionIDHasPrefix applies the HasPrefix predicate on the "session_id" field.
-func SessionIDHasPrefix(v string) predicate.Instance {
+// DiscordGuildIDGTE applies the GTE predicate on the "discord_guild_id" field.
+func DiscordGuildIDGTE(v string) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
-		s.Where(sql.HasPrefix(s.C(FieldSessionID), v))
+		s.Where(sql.GTE(s.C(FieldDiscordGuildID), v))
 	})
 }
 
-// SessionIDHasSuffix applies the HasSuffix predicate on the "session_id" field.
-func SessionIDHasSuffix(v string) predicate.Instance {
+// DiscordGuildIDLT applies the LT predicate on the "discord_guild_id" field.
+func DiscordGuildIDLT(v string) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
-		s.Where(sql.HasSuffix(s.C(FieldSessionID), v))
+		s.Where(sql.LT(s.C(FieldDiscordGuildID), v))
 	})
 }
 
-// SessionIDEqualFold applies the EqualFold predicate on the "session_id" field.
-func SessionIDEqualFold(v string) predicate.Instance {
+// DiscordGuildIDLTE applies the LTE predicate on the "discord_guild_id" field.
+func DiscordGuildIDLTE(v string) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
-		s.Where(sql.EqualFold(s.C(FieldSessionID), v))
+		s.Where(sql.LTE(s.C(FieldDiscordGuildID), v))
 	})
 }
 
-// SessionIDContainsFold applies the ContainsFold predicate on the "session_id" field.
-func SessionIDContainsFold(v string) predicate.Instance {
+// DiscordGuildIDContains applies the Contains predicate on the "discord_guild_id" field.
+func DiscordGuildIDContains(v string) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
-		s.Where(sql.ContainsFold(s.C(FieldSessionID), v))
+		s.Where(sql.Contains(s.C(FieldDiscordGuildID), v))
 	})
 }
 
-// HasConfig applies the HasEdge predicate on the "config" edge.
-func HasConfig() predicate.Instance {
+// DiscordGuildIDHasPrefix applies the HasPrefix predicate on the "discord_guild_id" field.
+func DiscordGuildIDHasPrefix(v string) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldDiscordGuildID), v))
+	})
+}
+
+// DiscordGuildIDHasSuffix applies the HasSuffix predicate on the "discord_guild_id" field.
+func DiscordGuildIDHasSuffix(v string) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldDiscordGuildID), v))
+	})
+}
+
+// DiscordGuildIDEqualFold applies the EqualFold predicate on the "discord_guild_id" field.
+func DiscordGuildIDEqualFold(v string) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldDiscordGuildID), v))
+	})
+}
+
+// DiscordGuildIDContainsFold applies the ContainsFold predicate on the "discord_guild_id" field.
+func DiscordGuildIDContainsFold(v string) predicate.Instance {
+	return predicate.Instance(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldDiscordGuildID), v))
+	})
+}
+
+// HasConfigs applies the HasEdge predicate on the "configs" edge.
+func HasConfigs() predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ConfigTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ConfigTable, ConfigColumn),
+			sqlgraph.To(ConfigsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ConfigsTable, ConfigsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasConfigWith applies the HasEdge predicate on the "config" edge with a given conditions (other predicates).
-func HasConfigWith(preds ...predicate.InstanceConfig) predicate.Instance {
+// HasConfigsWith applies the HasEdge predicate on the "configs" edge with a given conditions (other predicates).
+func HasConfigsWith(preds ...predicate.InstanceConfig) predicate.Instance {
 	return predicate.Instance(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ConfigInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ConfigTable, ConfigColumn),
+			sqlgraph.To(ConfigsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ConfigsTable, ConfigsColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

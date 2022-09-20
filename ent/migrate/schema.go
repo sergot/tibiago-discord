@@ -46,7 +46,8 @@ var (
 	// InstancesColumns holds the columns for the "instances" table.
 	InstancesColumns = []*schema.Column{
 		{Name: "uuid", Type: field.TypeUUID},
-		{Name: "session_id", Type: field.TypeString},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive"}},
+		{Name: "discord_guild_id", Type: field.TypeString},
 	}
 	// InstancesTable holds the schema information for the "instances" table.
 	InstancesTable = &schema.Table{
@@ -59,7 +60,7 @@ var (
 		{Name: "uuid", Type: field.TypeUUID},
 		{Name: "key", Type: field.TypeString},
 		{Name: "value", Type: field.TypeString},
-		{Name: "instance_config", Type: field.TypeUUID, Nullable: true},
+		{Name: "instance_configs", Type: field.TypeUUID, Nullable: true},
 	}
 	// InstanceConfigsTable holds the schema information for the "instance_configs" table.
 	InstanceConfigsTable = &schema.Table{
@@ -68,7 +69,7 @@ var (
 		PrimaryKey: []*schema.Column{InstanceConfigsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "instance_configs_instances_config",
+				Symbol:     "instance_configs_instances_configs",
 				Columns:    []*schema.Column{InstanceConfigsColumns[3]},
 				RefColumns: []*schema.Column{InstancesColumns[0]},
 				OnDelete:   schema.SetNull,
@@ -76,7 +77,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "instanceconfig_key_instance_config",
+				Name:    "instanceconfig_key_instance_configs",
 				Unique:  true,
 				Columns: []*schema.Column{InstanceConfigsColumns[1], InstanceConfigsColumns[3]},
 			},

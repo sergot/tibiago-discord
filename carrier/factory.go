@@ -24,6 +24,10 @@ type EntFactory struct {
 
 	participantFactory *factory.EntParticipantFactory
 
+	instanceFactory *factory.EntInstanceFactory
+
+	instanceConfigFactory *factory.EntInstanceConfigFactory
+
 	client *ent.Client
 }
 
@@ -83,4 +87,36 @@ func (f *EntFactory) SetParticipantFactory(c *factory.EntParticipantFactory) *En
 // ParticipantFactory return the EntParticipantFactory in wrapper
 func (f *EntFactory) ParticipantFactory() *factory.EntParticipantFactory {
 	return f.participantFactory
+}
+
+// EntInstanceMetaFactory return a new meta factory with given ent client
+func EntInstanceMetaFactory() *factory.EntInstanceMetaFactory {
+	return &factory.EntInstanceMetaFactory{}
+}
+
+// SetInstanceFactory set a factory in wrapper
+func (f *EntFactory) SetInstanceFactory(c *factory.EntInstanceFactory) *EntFactory {
+	f.instanceFactory = c.Client(f.client)
+	return f
+}
+
+// InstanceFactory return the EntInstanceFactory in wrapper
+func (f *EntFactory) InstanceFactory() *factory.EntInstanceFactory {
+	return f.instanceFactory
+}
+
+// EntInstanceConfigMetaFactory return a new meta factory with given ent client
+func EntInstanceConfigMetaFactory() *factory.EntInstanceConfigMetaFactory {
+	return &factory.EntInstanceConfigMetaFactory{}
+}
+
+// SetInstanceConfigFactory set a factory in wrapper
+func (f *EntFactory) SetInstanceConfigFactory(c *factory.EntInstanceConfigFactory) *EntFactory {
+	f.instanceConfigFactory = c.Client(f.client)
+	return f
+}
+
+// InstanceConfigFactory return the EntInstanceConfigFactory in wrapper
+func (f *EntFactory) InstanceConfigFactory() *factory.EntInstanceConfigFactory {
+	return f.instanceConfigFactory
 }

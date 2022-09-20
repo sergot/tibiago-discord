@@ -7,10 +7,53 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/sergot/tibiago/ent/bosslist"
+	"github.com/sergot/tibiago/ent/instance"
 	"github.com/sergot/tibiago/ent/participant"
 	"github.com/sergot/tibiago/src/models"
 	"github.com/sergot/tibiago/src/utils"
 )
+
+func GuildCreateHandler(db string) func(s *discordgo.Session, e *discordgo.GuildCreate) {
+	return func(_ *discordgo.Session, e *discordgo.GuildCreate) {
+		client, err := models.ConnectDatabase()
+		if err != nil {
+			log.Println(err)
+		}
+
+		instance := client.Instance.
+			Query().
+			Where(instance.DiscordGuildID(e.Guild.ID)).
+			WithConfigs().
+			OnlyX(context.Background())
+
+		if instance == nil {
+			log.Println("Instance not found, initializing new one")
+
+			defaultConfig, err = LoadConfig("default_config.yaml")
+			if err != nil {
+				log.Println(err)
+			}
+			configLines := utils.MapConfigToDBConfig(defaultConfig)
+
+			tmp := client.Instance.
+				Create().
+				SetDiscordGuildID(e.Guild.ID)
+
+			for _, line := range configLines {
+				tmp.AddConfigs(line)
+			}
+
+			instance = tmp.SaveX(context.Background())
+		}
+
+		instance.Update().
+			SetStatus("active").
+			SaveX(context.Background())
+
+		fmt.Println("Joined new guild")
+		fmt.Println(e.Guild.Name)
+	}
+}
 
 func ReadyHandler(db string) func(s *discordgo.Session, r *discordgo.Ready) {
 	return func(s *discordgo.Session, r *discordgo.Ready) {
@@ -23,9 +66,14 @@ func ReadyHandler(db string) func(s *discordgo.Session, r *discordgo.Ready) {
 				log.Println(err)
 			}
 
-			instances_map[guild.ID] = &models.Instance{
-				Config: defaultConfig,
-			}
+			// client, err := models.ConnectDatabase()
+			// if err != nil {
+			// 	log.Println(err)
+			// }
+
+			// instances_map[guild.ID] = &models.Instance{
+			// 	Config: defaultConfig,
+			// }
 
 			fmt.Printf("- %s\n", guild_details.Name)
 
@@ -117,19 +165,25 @@ func ReactionAddHandler(db string) func(s *discordgo.Session, m *discordgo.Messa
 			return
 		}
 
-		instance := instances_map[m.GuildID]
-		vocation := instance.Config.Bot.VocationEmojis[m.Emoji.Name]
-		fmt.Println(instance.Config.Bot.VocationEmojis)
-		if vocation == "" {
-			log.Println("Unknown vocation emoji: ", m.Emoji.APIName())
-			return
-		}
-
 		client, err := models.ConnectDatabase()
 		if err != nil {
 			log.Println(err)
 		}
 		defer client.Close()
+
+		instance := client.Instance.
+			Query().
+			Where(instance.DiscordGuildID(m.GuildID)).
+			OnlyX(context.Background())
+
+		config := utils.MapDBConfigToConfig(instance.QueryConfigs().AllX(context.Background()))
+
+		vocation := config.Bot.VocationEmojis[m.Emoji.Name]
+		fmt.Println(config.Bot.VocationEmojis)
+		if vocation == "" {
+			log.Println("Unknown vocation emoji: ", m.Emoji.APIName())
+			return
+		}
 
 		p, err := client.Participant.
 			Create().
@@ -177,10 +231,16 @@ func CommonHandler(db string) func(s *discordgo.Session, m *discordgo.MessageCre
 			return
 		}
 
-		instance := instances_map[m.GuildID]
-		content := m.Content
+		client, err := models.ConnectDatabase()
+		if err != nil {
+			log.Println(err)
+		}
+		defer client.Close()
 
-		fmt.Println(content)
+		instance := client.Instance.
+			Query().
+			Where(instance.DiscordGuildID(m.GuildID)).
+			OnlyX(context.Background())
 
 		cmd, err := utils.ParseCmd(m, instance)
 		if err != nil {

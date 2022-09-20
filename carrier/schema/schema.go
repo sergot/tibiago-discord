@@ -16,5 +16,11 @@ var (
 		&carrier.EntSchema{
 			To: &ent.ParticipantCreate{},
 		},
+		&carrier.EntSchema{
+			To: &ent.InstanceCreate{},
+		},
+		&carrier.EntSchema{
+			To: &ent.InstanceConfigCreate{},
+		},
 	}
 )

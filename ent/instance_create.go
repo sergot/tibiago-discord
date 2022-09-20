@@ -21,9 +21,15 @@ type InstanceCreate struct {
 	hooks    []Hook
 }
 
-// SetSessionID sets the "session_id" field.
-func (ic *InstanceCreate) SetSessionID(s string) *InstanceCreate {
-	ic.mutation.SetSessionID(s)
+// SetStatus sets the "status" field.
+func (ic *InstanceCreate) SetStatus(i instance.Status) *InstanceCreate {
+	ic.mutation.SetStatus(i)
+	return ic
+}
+
+// SetDiscordGuildID sets the "discord_guild_id" field.
+func (ic *InstanceCreate) SetDiscordGuildID(s string) *InstanceCreate {
+	ic.mutation.SetDiscordGuildID(s)
 	return ic
 }
 
@@ -41,14 +47,14 @@ func (ic *InstanceCreate) SetNillableID(u *uuid.UUID) *InstanceCreate {
 	return ic
 }
 
-// AddConfigIDs adds the "config" edge to the InstanceConfig entity by IDs.
+// AddConfigIDs adds the "configs" edge to the InstanceConfig entity by IDs.
 func (ic *InstanceCreate) AddConfigIDs(ids ...uuid.UUID) *InstanceCreate {
 	ic.mutation.AddConfigIDs(ids...)
 	return ic
 }
 
-// AddConfig adds the "config" edges to the InstanceConfig entity.
-func (ic *InstanceCreate) AddConfig(i ...*InstanceConfig) *InstanceCreate {
+// AddConfigs adds the "configs" edges to the InstanceConfig entity.
+func (ic *InstanceCreate) AddConfigs(i ...*InstanceConfig) *InstanceCreate {
 	ids := make([]uuid.UUID, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
@@ -141,8 +147,16 @@ func (ic *InstanceCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ic *InstanceCreate) check() error {
-	if _, ok := ic.mutation.SessionID(); !ok {
-		return &ValidationError{Name: "session_id", err: errors.New(`ent: missing required field "Instance.session_id"`)}
+	if _, ok := ic.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Instance.status"`)}
+	}
+	if v, ok := ic.mutation.Status(); ok {
+		if err := instance.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Instance.status": %w`, err)}
+		}
+	}
+	if _, ok := ic.mutation.DiscordGuildID(); !ok {
+		return &ValidationError{Name: "discord_guild_id", err: errors.New(`ent: missing required field "Instance.discord_guild_id"`)}
 	}
 	return nil
 }
@@ -180,20 +194,28 @@ func (ic *InstanceCreate) createSpec() (*Instance, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := ic.mutation.SessionID(); ok {
+	if value, ok := ic.mutation.Status(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: instance.FieldStatus,
+		})
+		_node.Status = value
+	}
+	if value, ok := ic.mutation.DiscordGuildID(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
-			Column: instance.FieldSessionID,
+			Column: instance.FieldDiscordGuildID,
 		})
-		_node.SessionID = value
+		_node.DiscordGuildID = value
 	}
-	if nodes := ic.mutation.ConfigIDs(); len(nodes) > 0 {
+	if nodes := ic.mutation.ConfigsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   instance.ConfigTable,
-			Columns: []string{instance.ConfigColumn},
+			Table:   instance.ConfigsTable,
+			Columns: []string{instance.ConfigsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

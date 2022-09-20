@@ -226,7 +226,7 @@ func (icc *InstanceConfigCreate) createSpec() (*InstanceConfig, *sqlgraph.Create
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.instance_config = &nodes[0]
+		_node.instance_configs = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

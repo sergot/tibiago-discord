@@ -18,13 +18,17 @@ func (Instance) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New).
 			StorageKey("uuid"),
-		field.String("session_id"),
+
+		field.Enum("status").
+			Values("active", "inactive"), // TODO: more statuses
+
+		field.String("discord_guild_id"),
 	}
 }
 
 // Edges of the Instance.
 func (Instance) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("config", InstanceConfig.Type),
+		edge.To("configs", InstanceConfig.Type),
 	}
 }

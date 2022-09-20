@@ -465,15 +465,15 @@ func (c *InstanceClient) GetX(ctx context.Context, id uuid.UUID) *Instance {
 	return obj
 }
 
-// QueryConfig queries the config edge of a Instance.
-func (c *InstanceClient) QueryConfig(i *Instance) *InstanceConfigQuery {
+// QueryConfigs queries the configs edge of a Instance.
+func (c *InstanceClient) QueryConfigs(i *Instance) *InstanceConfigQuery {
 	query := &InstanceConfigQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := i.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(instance.Table, instance.FieldID, id),
 			sqlgraph.To(instanceconfig.Table, instanceconfig.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, instance.ConfigTable, instance.ConfigColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, instance.ConfigsTable, instance.ConfigsColumn),
 		)
 		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
 		return fromV, nil

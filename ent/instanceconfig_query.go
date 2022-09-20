@@ -395,10 +395,10 @@ func (icq *InstanceConfigQuery) loadInstance(ctx context.Context, query *Instanc
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*InstanceConfig)
 	for i := range nodes {
-		if nodes[i].instance_config == nil {
+		if nodes[i].instance_configs == nil {
 			continue
 		}
-		fk := *nodes[i].instance_config
+		fk := *nodes[i].instance_configs
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -412,7 +412,7 @@ func (icq *InstanceConfigQuery) loadInstance(ctx context.Context, query *Instanc
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "instance_config" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "instance_configs" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

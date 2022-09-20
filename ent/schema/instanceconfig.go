@@ -29,7 +29,7 @@ func (InstanceConfig) Fields() []ent.Field {
 func (InstanceConfig) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("instance", Instance.Type).
-			Ref("config").
+			Ref("configs").
 			Unique(),
 	}
 }

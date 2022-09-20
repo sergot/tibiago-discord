@@ -25,7 +25,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "instance" package.
 	InstanceInverseTable = "instances"
 	// InstanceColumn is the table column denoting the instance relation/edge.
-	InstanceColumn = "instance_config"
+	InstanceColumn = "instance_configs"
 )
 
 // Columns holds all SQL columns for instanceconfig fields.
@@ -38,7 +38,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "instance_configs"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"instance_config",
+	"instance_configs",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

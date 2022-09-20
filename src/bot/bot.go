@@ -10,8 +10,6 @@ import (
 	"github.com/sergot/tibiago/src/models"
 )
 
-// TODO: store in db
-var instances_map map[string]*models.Instance
 var defaultConfig *models.Config
 
 func Connect(db string) {
@@ -29,8 +27,7 @@ func Connect(db string) {
 		return
 	}
 
-	bot := New()
-	instances_map = make(map[string]*models.Instance)
+	bot := NewBot()
 
 	me, err := s.User("@me")
 	if err != nil {
@@ -41,7 +38,9 @@ func Connect(db string) {
 
 	s.Identify.Intents = discordgo.MakeIntent(discordgo.IntentGuilds | discordgo.IntentGuildMessages | discordgo.IntentGuildMessageReactions)
 
+	s.AddHandler(GuildCreateHandler(db))
 	s.AddHandler(ReadyHandler(db))
+
 	s.AddHandler(ReactionAddHandler(db))
 	s.AddHandler(ReactionRemoveHandler(db))
 	s.AddHandler(CommonHandler(db))
