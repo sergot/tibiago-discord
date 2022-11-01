@@ -6,11 +6,15 @@ services:
       target: dev
     volumes:
       - .:/opt/app/tibiago
+    networks:
+      - tibiago_network
     environment:
       DATABASE_URL: postgres://local-dev@db/tibiago?sslmode=disable
       ENV: dev
     links:
       - db
+    ports:
+      - "2345:2345"
 
   db:
     image: postgres:14-alpine
@@ -18,10 +22,16 @@ services:
       - "5432:5432"
     volumes:
       - data:/var/lib/postgresql/data
+    networks:
+      - tibiago_network
     environment:
       POSTGRES_DB: tibiago
       POSTGRES_USER: local-dev
       POSTGRES_HOST_AUTH_METHOD: trust
+
+networks:
+  tibiago_network:
+    name: tibiago_network
 
 volumes:
   data: #
