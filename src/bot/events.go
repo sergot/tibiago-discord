@@ -112,62 +112,6 @@ func ReadyHandler(db string) func(s *discordgo.Session, r *discordgo.Ready) {
 	}
 }
 
-func ReactionRemoveHandler(db string) func(s *discordgo.Session, m *discordgo.MessageReactionRemove) {
-	return func(s *discordgo.Session, m *discordgo.MessageReactionRemove) {
-		message, err := s.ChannelMessage(m.ChannelID, m.MessageID)
-		if err != nil {
-			log.Println(err)
-		}
-
-		me, err := s.User("@me")
-		if err != nil {
-			log.Println("Error obtaining account details,", err)
-		}
-
-		if me.ID != message.Author.ID {
-			return
-		}
-
-		client, err := models.ConnectDatabase()
-		if err != nil {
-			log.Println(err)
-		}
-		defer client.Close()
-
-		bl, err := client.Bosslist.
-			Query().
-			Where(bosslist.DiscordMessageID(m.MessageID)).
-			WithParticipants().
-			Only(context.Background())
-		if err != nil {
-			log.Println(err)
-		}
-
-		p, err := bl.QueryParticipants().
-			Where(participant.DiscordID(m.UserID)).
-			// Where(vocation)
-			Only(context.Background())
-		if err != nil {
-			log.Println(err)
-		}
-
-		err = client.Participant.
-			DeleteOneID(p.ID).
-			Exec(context.Background())
-		if err != nil {
-			log.Println(err)
-		}
-
-		list := utils.GenerateBosslist(bl)
-
-		_, err = s.ChannelMessageEdit(message.ChannelID, message.ID, list)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-	}
-}
-
 func ReactionAddHandler(db string) func(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 	return func(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
 		message, err := s.ChannelMessage(m.ChannelID, m.MessageID)
@@ -196,6 +140,11 @@ func ReactionAddHandler(db string) func(s *discordgo.Session, m *discordgo.Messa
 			OnlyX(context.Background())
 
 		config := utils.MapDBConfigToConfig(instance.QueryConfigs().AllX(context.Background()))
+		err = s.MessageReactionRemove(m.ChannelID, m.MessageID, m.Emoji.APIName(), m.UserID)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 
 		vocation := config.Bot.VocationEmojis[m.Emoji.Name]
 		fmt.Println(config.Bot.VocationEmojis)
@@ -204,22 +153,31 @@ func ReactionAddHandler(db string) func(s *discordgo.Session, m *discordgo.Messa
 			return
 		}
 
+		bl, err := client.Bosslist.
+			Query().
+			Where(bosslist.DiscordMessageID(m.MessageID)).
+			Only(context.Background())
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		participantExists := client.Participant.Query().
+			Where(participant.DiscordID(m.UserID)).
+			Where(participant.HasBosslistWith(bosslist.ID(bl.ID))).
+			ExistX(context.Background())
+
+		if participantExists {
+			// TODO: handle unique contraint violation properly (priv msg to the user?)
+			log.Println("Participant already exists for that bosslist")
+			return
+		}
+
 		p, err := client.Participant.
 			Create().
 			SetVocation(participant.Vocation(vocation)).
 			SetDiscordID(m.UserID).
 			Save(context.Background())
-		if err != nil {
-			_ = s.MessageReactionRemove(m.ChannelID, m.MessageID, m.Emoji.ID, m.UserID)
-			// TODO: handle unique contraint violation (priv msg to the user?)
-			log.Println(err)
-			return
-		}
-
-		bl, err := client.Bosslist.
-			Query().
-			Where(bosslist.DiscordMessageID(m.MessageID)).
-			Only(context.Background())
 		if err != nil {
 			log.Println(err)
 			return
