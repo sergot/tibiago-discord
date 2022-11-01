@@ -124,7 +124,8 @@ func GenerateBosslist(bosslist *ent.Bosslist) string {
 		tmpl = boss.Template
 	}
 
-	parts := funk.Map(bosslist.QueryParticipants().AllX(context.Background()), func(ep *ent.Participant) Part {
+	all_participants := bosslist.QueryParticipants().AllX(context.Background())
+	parts := funk.Map(all_participants, func(ep *ent.Participant) Part {
 		return Part{
 			ID:  ep.DiscordID,
 			Voc: ep.Vocation.String(),

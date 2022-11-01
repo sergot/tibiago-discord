@@ -34,7 +34,6 @@ func Connect(db string) {
 	s.AddHandler(ReadyHandler(db))
 
 	s.AddHandler(ReactionAddHandler(db))
-	s.AddHandler(ReactionRemoveHandler(db))
 	s.AddHandler(CommonHandler(db))
 
 	err = s.Open()
