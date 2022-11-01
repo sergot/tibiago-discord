@@ -140,8 +140,14 @@ func ReactionAddHandler(db string) func(s *discordgo.Session, m *discordgo.Messa
 			OnlyX(context.Background())
 
 		config := utils.MapDBConfigToConfig(instance.QueryConfigs().AllX(context.Background()))
+		err = s.MessageReactionRemove(m.ChannelID, m.MessageID, m.Emoji.APIName(), m.UserID)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 
 		vocation := config.Bot.VocationEmojis[m.Emoji.Name]
+		fmt.Println(config.Bot.VocationEmojis)
 		if vocation == "" {
 			log.Println("Unknown vocation emoji: ", m.Emoji.APIName())
 			return
