@@ -153,17 +153,6 @@ func ReactionAddHandler(db string) func(s *discordgo.Session, m *discordgo.Messa
 			return
 		}
 
-		p, err := client.Participant.
-			Create().
-			SetVocation(participant.Vocation(vocation)).
-			SetDiscordID(m.UserID).
-			Save(context.Background())
-		if err != nil {
-			_ = s.MessageReactionRemove(m.ChannelID, m.MessageID, m.Emoji.APIName(), m.UserID)
-			log.Println("Same person reacts with the same emoji", err)
-			return
-		}
-
 		bl, err := client.Bosslist.
 			Query().
 			Where(bosslist.DiscordMessageID(m.MessageID)).
@@ -171,6 +160,39 @@ func ReactionAddHandler(db string) func(s *discordgo.Session, m *discordgo.Messa
 			Only(context.Background())
 		if err != nil {
 			log.Println("Bosslist not found", err)
+			return
+		}
+
+		pExists, _ := client.Participant.
+			Query().
+			Where(participant.HasBosslistWith(bosslist.ID(bl.ID))).
+			Where(participant.DiscordID(m.UserID)).
+			Where(participant.VocationEQ(participant.Vocation(vocation))).
+			Only(context.Background())
+
+		if pExists != nil {
+			err = bl.Update().RemoveParticipants(pExists).Exec(context.Background())
+			if err != nil {
+				log.Println("Couldn't remove participant from bosslist", err)
+			}
+			err = UpdateList(s, bl, message.ChannelID, message.ID)
+			if err != nil {
+				log.Println("Couldn't update the list", err)
+			}
+			return
+		}
+
+		p, err := client.Participant.
+			Create().
+			SetVocation(participant.Vocation(vocation)).
+			SetDiscordID(m.UserID).
+			Save(context.Background())
+		if err != nil {
+			_ = s.MessageReactionRemove(m.ChannelID, m.MessageID, m.Emoji.APIName(), m.UserID)
+			err = bl.Update().RemoveParticipants(p).Exec(context.Background())
+			log.Println("Couldn't remove participant from bosslist", err)
+			err = client.Participant.DeleteOne(p).Exec(context.Background())
+			log.Println("Couldn't delete participant", err)
 			return
 		}
 
@@ -186,12 +208,9 @@ func ReactionAddHandler(db string) func(s *discordgo.Session, m *discordgo.Messa
 			_ = s.MessageReactionRemove(m.ChannelID, m.MessageID, m.Emoji.APIName(), m.UserID)
 		}
 
-		list := utils.GenerateBosslist(bl)
-
-		_, err = s.ChannelMessageEdit(message.ChannelID, message.ID, list)
+		err = UpdateList(s, bl, message.ChannelID, message.ID)
 		if err != nil {
 			log.Println(err)
-			return
 		}
 	}
 }
